@@ -5,23 +5,26 @@ from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 import requests
 import urllib.parse
+import uuid
 from .models import User
 
 
 def oauth_login(request):
     """Initiate 42 OAuth flow"""
+    state = str(uuid.uuid4())
+    request.session['oauth_state'] = state
     params = {
         "client_id": settings.OAUTH_42_CLIENT_ID,
         "redirect_uri": settings.OAUTH_42_REDIRECT_URI,
         "response_type": "code",
         "scope": "public",
+        "state": state,
     }
 
     auth_url = f"{settings.OAUTH_42_AUTHORIZATION_URL}?{urllib.parse.urlencode(params)}"
     return JsonResponse({"auth_url": auth_url})
 
 
-@csrf_exempt
 def logout_user(request):
     logout(request)
     return JsonResponse({"success": True, "message": "Logged out successfully!"})
@@ -32,6 +35,11 @@ def oauth_callback(request):
     """Handle 42 OAuth callback"""
     if request.method == "GET":
         # Handle direct OAuth callback from 42
+        received_state = request.GET.get("state")
+        stored_state = request.session.get('oauth_state')
+        if not received_state or not stored_state or received_state != stored_state:
+            return redirect("https://42projects.cc/?error=invalid_auth_request")
+        del request.session['oauth_state']
         code = request.GET.get("code")
         if not code:
             return redirect("https://42projects.cc/auth/callback?error=no_code")
@@ -49,16 +57,14 @@ def oauth_callback(request):
         token_json = token_response.json()
 
         if "access_token" not in token_json:
-            return redirect("https://42projects.cc/auth/callback?error=token_failed")
+            return redirect("https://42projects.cc/?error=token_failed")
 
         # Get user info from 42
         headers = {"Authorization": f"Bearer {token_json['access_token']}"}
         user_response = requests.get(settings.OAUTH_42_USER_URL, headers=headers)
 
         if user_response.status_code != 200:
-            return redirect(
-                "https://42projects.cc/auth/callback?error=user_info_failed"
-            )
+            return redirect("https://42projects.cc/?error=user_info_failed")
 
         user_data = user_response.json()
 
@@ -87,9 +93,7 @@ def oauth_callback(request):
             return redirect("https://42projects.cc/dashboard")
 
         except Exception:
-            return redirect(
-                "https://42projects.cc/auth/callback?error=user_creation_failed"
-            )
+            return redirect("https://42projects.cc/?error=user_creation_failed")
 
     # Handle POST requests (if frontend sends code)
     elif request.method == "POST":
