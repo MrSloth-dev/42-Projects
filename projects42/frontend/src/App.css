@@ -1,0 +1,82 @@
+.App {
+  margin: 0 auto;
+  padding: 0px;
+}
+
+.app-header {
+  text-align: center;
+  margin-bottom: -30px;
+}
+
+.app-header h1 {
+  color: #333;
+  margin: 0;
+}
+
+.projects-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+}
+
+.filters {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  padding: 20px;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.filters input,
+.filters select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.filters input {
+  flex: 1;
+  min-width: 200px;
+}
+
+.projects-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.projects-table th,
+.projects-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.projects-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #333;
+}
+
+.projects-table tbody tr:hover {
+  background: #f8f9fa;
+}
+
+.projects-table td {
+  max-width: 200px;
+  word-wrap: break-word;
+}
+
+.projects-table a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.projects-table a:hover {
+  text-decoration: underline;
+}

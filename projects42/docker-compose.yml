@@ -1,0 +1,108 @@
+---
+services:
+  nginx:
+      build: 
+        context: ./nginx
+        dockerfile: Dockerfile
+      ports:
+        - "80:80"
+        - "443:443"
+      volumes:
+        - static_volume:/app/staticfiles:ro
+        - media_volume:/app/media:ro
+      depends_on:
+        - backend
+        - frontend
+      restart: unless-stopped
+      networks:
+        - app-network
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+        - app-network
+
+  backend:
+    build: .
+    ports:
+      - "8000"
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+      - ./backups:/app/backups
+    networks:
+        - app-network
+
+  frontend:
+      build: 
+        context: ./frontend
+        dockerfile: Dockerfile
+      restart: unless-stopped
+      depends_on:
+        - backend
+      networks:
+        - app-network
+    
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --origincert /run/secrets/cloudflare_origin_cert --credentials-file /run/secrets/cloudflare_tunnel_credentials --url http://nginx:80 run 3cc69b7d-b6bc-4708-90c3-fc77426e7391
+    secrets:
+      - cloudflare_tunnel_credentials
+      - cloudflare_origin_cert
+    restart: unless-stopped
+    networks:
+      - app-network
+  # backup:
+  #   image: postgres:15
+  #   depends_on:
+  #     - db
+  #   volumes:
+  #     - ./backups:/backups
+  #     - postgres_data:/var/lib/postgresql/data
+  #   environment:
+  #     POSTGRES_DB: ${DB_NAME}
+  #     POSTGRES_USER: ${DB_USER}
+  #     POSTGRES_PASSWORD: ${DB_PASSWORD}
+  #     PGPASSWORD: ${DB_PASSWORD}
+  #   command: |
+  #     bash -c "
+  #     while true; do
+  #       pg_dump -h db -U ${DB_USER} ${DB_NAME} > /backups/backup_$$(date +%Y%m%d_%H%M%S).sql
+  #       find /backups -name '*.sql' -mtime +7 -delete
+  #       sleep 86400
+  #     done"
+  #   restart: unless-stopped
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
+
+networks:
+  app-network:
+    driver: bridge
+
+secrets:
+  cloudflare_tunnel_credentials:
+    file: ./cloudflare_tunnel_credentials.json
+  cloudflare_origin_cert:
+    file: ./cloudflare_origin_cert.pem
