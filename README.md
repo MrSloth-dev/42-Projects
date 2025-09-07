@@ -178,7 +178,12 @@ Found a bug or have a feature request? Please check our [GitHub Issues](https://
 
 ## Changelog
 
-### [1.0.0] - 2025-09-08
+### [1.1.0] - 2025-09-08
+
+- Fix CSRF on login and logout
+- Fix Missing SSL Certificate and nginx https redirect
+
+### [1.0.0] - 2025-09-07
 
 #### Initial Release
 - **Authentication**: 42 OAuth integration with secure session management
