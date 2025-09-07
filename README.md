@@ -1,8 +1,11 @@
 # 42Projects
 
-## A web application that helps 42 students discover and explore 42 School projects with filtering, searching, and comprehensive project information.
+##### A web application that helps 42 students discover and explore 42 School projects with filtering, searching, and comprehensive project information.
 
 ### Visit here! [https://42projects.cc](https://42projects.cc)
+![landing_page](assets/landing_page.png)
+![dashboard](assets/dashboard.png)
+![filters](assets/filters.png)
 
 ## Table of Contents
 
@@ -175,7 +178,7 @@ Found a bug or have a feature request? Please check our [GitHub Issues](https://
 
 ## Changelog
 
-### [1.0.0] - 2025-09-97
+### [1.0.0] - 2025-09-08
 
 #### Initial Release
 - **Authentication**: 42 OAuth integration with secure session management
