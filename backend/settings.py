@@ -33,7 +33,7 @@ ALLOWED_HOSTS = [
 
 USE_X_FORWARDED_HOST = True
 USE_X_FORWARDED_PORT = True
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_PROXY_SSL_HEADER = ('HTTP_CF_VISITOR', '{"scheme":"https"}')
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -120,8 +120,8 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://192.168.1.64",
-    "https://42projects.cc",  # Add HTTPS version
-    "http://42projects.cc",  # HTTP fallback
+    "https://42projects.cc",
+    "http://42projects.cc",
 ]
 
 
@@ -139,7 +139,7 @@ CSRF_TRUSTED_ORIGINS = [
 
 # Security settings for production
 if not DEBUG:
-    SECURE_SSL_REDIRECT = False
+    SECURE_SSL_REDIRECT = True
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
