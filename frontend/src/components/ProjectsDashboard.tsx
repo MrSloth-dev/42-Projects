@@ -462,7 +462,7 @@ const ProjectsDashboard: React.FC<ProjectsDashboardProps> = () => {
                           {project.estimate_time ? `${project.estimate_time}h` : "N/A"}
                         </TableCell>
                         <TableCell>
-                          <Badge variant="42-type">
+                          <Badge variant={project.solo ? "42-solo" : "42-group"}>
                             {project.solo ? "Solo" : "Group"}
                           </Badge>
                         </TableCell>

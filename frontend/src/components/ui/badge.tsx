@@ -16,6 +16,8 @@ const badgeVariants = cva(
         outline: "text-foreground",
         // 42 Projects Gruvbox variants
         "42-type": "text-[color:var(--color-42-accent)] border-[color:var(--color-42-accent)]/50 bg-[color:var(--color-42-surface-variant)]/50",
+        "42-solo": "text-[color:var(--gb-bright-orange)] border-[color:var(--gb-neutral-orange)]/50 bg-[color:var(--gb-neutral-orange)]/20",
+        "42-group": "text-[color:var(--gb-bright-aqua)] border-[color:var(--gb-neutral-aqua)]/50 bg-[color:var(--gb-neutral-aqua)]/20",
         "42-language": "bg-[color:var(--color-42-surface)] text-[color:var(--color-42-primary)] border-[color:var(--color-border)]",
         "42-count": "text-[color:var(--color-42-primary)] border-[color:var(--color-42-primary)]/50 bg-[color:var(--color-42-surface-variant)]/50",
       },
