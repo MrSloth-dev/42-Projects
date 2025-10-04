@@ -40,7 +40,7 @@ ENV PYTHONUNBUFFERED=1
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('https://42projects.cc/api/projects/', timeout=10)" || exit 1;
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost/api/projects/', timeout=10)" || exit 1;
 
 COPY entrypoint.sh .;
 RUN chmod +x entrypoint.sh;

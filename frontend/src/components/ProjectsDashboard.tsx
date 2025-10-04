@@ -60,11 +60,25 @@ const ProjectsDashboard: React.FC<ProjectsDashboardProps> = () => {
     try {
       setLoading(true);
       const response = await projectsApi.getProjects();
-      setProjects(response.data || []);
+
+      // Handle different response structures
+      let projectsData: Project[];
+      if (response.data?.results) {
+        // Paginated response
+        projectsData = response.data.results;
+      } else if (Array.isArray(response.data)) {
+        // Direct array response
+        projectsData = response.data;
+      } else {
+        projectsData = [];
+      }
+
+      setProjects(projectsData);
       setError(null);
     } catch (err) {
       setError('Failed to fetch projects');
-      console.error(err);
+      console.error('Fetch error:', err);
+      setProjects([]); // Always ensure projects is an array
     } finally {
       setLoading(false);
     }

@@ -2,14 +2,23 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Accept build argument
+ARG VITE_API_BASE_URL=http://localhost:8000
+
+# Set as environment variable for build process
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies (use npm install instead of ci)
+# Install dependencies
 RUN npm install
 
 # Copy source code
 COPY . .
+
+# Debug: Show environment variables (optional)
+RUN echo "Building with VITE_API_BASE_URL=${VITE_API_BASE_URL}"
 
 # Build the app
 RUN npm run build

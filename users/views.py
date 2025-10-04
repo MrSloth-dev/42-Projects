@@ -7,7 +7,6 @@ import requests
 import urllib.parse
 from .models import User
 
-
 def oauth_login(request):
     """Initiate 42 OAuth flow"""
     params = {
@@ -16,16 +15,13 @@ def oauth_login(request):
         "response_type": "code",
         "scope": "public",
     }
-
     auth_url = f"{settings.OAUTH_42_AUTHORIZATION_URL}?{urllib.parse.urlencode(params)}"
     return JsonResponse({"auth_url": auth_url})
-
 
 @csrf_exempt
 def logout_user(request):
     logout(request)
     return JsonResponse({"success": True, "message": "Logged out successfully!"})
-
 
 @csrf_exempt
 def oauth_callback(request):
@@ -34,7 +30,7 @@ def oauth_callback(request):
         # Handle direct OAuth callback from 42
         code = request.GET.get("code")
         if not code:
-            return redirect("https://42projects.cc/auth/callback?error=no_code")
+            return redirect(f"{settings.FRONTEND_URL}/auth/callback?error=no_code")
 
         # Process the OAuth code
         token_data = {
@@ -49,21 +45,19 @@ def oauth_callback(request):
         token_json = token_response.json()
 
         if "access_token" not in token_json:
-            return redirect("https://42projects.cc/auth/callback?error=token_failed")
+            return redirect(f"{settings.FRONTEND_URL}/auth/callback?error=token_failed")
 
-        # Get user info from 42
         headers = {"Authorization": f"Bearer {token_json['access_token']}"}
         user_response = requests.get(settings.OAUTH_42_USER_URL, headers=headers)
 
         if user_response.status_code != 200:
             return redirect(
-                "https://42projects.cc/auth/callback?error=user_info_failed"
+                f"{settings.FRONTEND_URL}/auth/callback?error=user_info_failed"
             )
 
         user_data = user_response.json()
 
         try:
-            # Create or get user
             user, created = User.objects.get_or_create(
                 user_42_id=user_data["id"],
                 defaults={
@@ -80,24 +74,18 @@ def oauth_callback(request):
                 },
             )
 
-            # Log in the user
             login(request, user)
 
-            # Redirect to dashboard after successful login
-            return redirect("https://42projects.cc/dashboard")
-
+            return redirect(f"{settings.FRONTEND_URL}/dashboard")
         except Exception:
             return redirect(
-                "https://42projects.cc/auth/callback?error=user_creation_failed"
+                f"{settings.FRONTEND_URL}/auth/callback?error=user_creation_failed"
             )
 
-    # Handle POST requests (if frontend sends code)
     elif request.method == "POST":
-        # Keep existing POST logic if needed for alternative flow
         return JsonResponse(
             {"error": "POST method not supported in direct OAuth flow"}, status=405
         )
-
 
 def user_info(request):
     """Get current user info"""

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = `/api`;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -53,11 +53,10 @@ export const projectsApi = {
     languages?: string;
     specializations?: string;
     ordering?: string;
-  }) => api.get<Project[]>('/projects/', { params }),
+  }) => api.get<ProjectsResponse>('/projects/', { params }), // Remove /api/ prefix
   getProject: (id: number) => api.get<Project>(`/projects/${id}/`),
 };
 
-// Auth API
 export const authApi = {
   getAuthUrl: () => api.get(`/auth/login/`),
   getCurrentUser: () => api.get(`/auth/user/`),

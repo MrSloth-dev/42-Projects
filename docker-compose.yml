@@ -4,6 +4,8 @@ services:
       build: 
         context: ./nginx
         dockerfile: Dockerfile
+        args:
+          - PROFILE=${COMPOSE_PROFILES:-dev}
       ports:
         - "80:80"
         - "443:443"
@@ -55,13 +57,14 @@ services:
       build: 
         context: ./frontend
         dockerfile: Dockerfile
+        args:
+          - VITE_API_BASE_URL=${VITE_API_BASE_URL}
       restart: unless-stopped
       depends_on:
         - backend
       networks:
         - app-network
     
-
   cloudflared:
     image: cloudflare/cloudflared:latest
     command: tunnel --origincert /run/secrets/cloudflare_origin_cert --credentials-file /run/secrets/cloudflare_tunnel_credentials --url http://nginx:80 run 3cc69b7d-b6bc-4708-90c3-fc77426e7391
@@ -71,26 +74,8 @@ services:
     restart: unless-stopped
     networks:
       - app-network
-  # backup:
-  #   image: postgres:15
-  #   depends_on:
-  #     - db
-  #   volumes:
-  #     - ./backups:/backups
-  #     - postgres_data:/var/lib/postgresql/data
-  #   environment:
-  #     POSTGRES_DB: ${DB_NAME}
-  #     POSTGRES_USER: ${DB_USER}
-  #     POSTGRES_PASSWORD: ${DB_PASSWORD}
-  #     PGPASSWORD: ${DB_PASSWORD}
-  #   command: |
-  #     bash -c "
-  #     while true; do
-  #       pg_dump -h db -U ${DB_USER} ${DB_NAME} > /backups/backup_$$(date +%Y%m%d_%H%M%S).sql
-  #       find /backups -name '*.sql' -mtime +7 -delete
-  #       sleep 86400
-  #     done"
-  #   restart: unless-stopped
+    profiles:
+      - prod
 
 volumes:
   postgres_data:
