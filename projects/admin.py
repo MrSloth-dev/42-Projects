@@ -84,7 +84,6 @@ class ProjectAdmin(admin.ModelAdmin):
         "toggle_cpp",
         "toggle_python",
         "toggle_javascript",
-        "toggle_typescript",
         "toggle_java",
         "toggle_ocaml",
         "toggle_compiled_languages",
@@ -94,11 +93,13 @@ class ProjectAdmin(admin.ModelAdmin):
         "toggle_kotlin",
         "toggle_swift",
         "toggle_dart",
+        "toggle_ruby",
         "toggle_zig",
         "toggle_go",
         "toggle_assembly",
         "toggle_rust",
         "toggle_undefined",
+        "toggle_na",
     ]
 
     # Specialization actions
@@ -243,24 +244,6 @@ class ProjectAdmin(admin.ModelAdmin):
 
     toggle_javascript.short_description = "Toggle JavaScript"
 
-    def toggle_typescript(self, request, queryset):
-        lang = Language.objects.get(name="typescript")
-        for project in queryset:
-            if lang in project.languages.all():
-                project.languages.remove(lang)
-            else:
-                project.languages.add(lang)
-
-    toggle_typescript.short_description = "Toggle TypeScript"
-
-    def toggle_java(self, request, queryset):
-        lang = Language.objects.get(name="java")
-        for project in queryset:
-            if lang in project.languages.all():
-                project.languages.remove(lang)
-            else:
-                project.languages.add(lang)
-
     toggle_java.short_description = "Toggle Java"
 
     def toggle_ocaml(self, request, queryset):
@@ -272,6 +255,26 @@ class ProjectAdmin(admin.ModelAdmin):
                 project.languages.add(lang)
 
     toggle_ocaml.short_description = "Toggle OCaml"
+
+    def toggle_ruby(self, request, queryset):
+        lang = Language.objects.get(name="ruby")
+        for project in queryset:
+            if lang in project.languages.all():
+                project.languages.remove(lang)
+            else:
+                project.languages.add(lang)
+
+    toggle_ruby.short_description = "Toggle Ruby"
+
+    def toggle_na(self, request, queryset):
+        lang = Language.objects.get(name="na")
+        for project in queryset:
+            if lang in project.languages.all():
+                project.languages.remove(lang)
+            else:
+                project.languages.add(lang)
+
+    toggle_na.short_description = "Toggle Not Applicable"
 
     def toggle_compiled_languages(self, request, queryset):
         lang = Language.objects.get(name="compiled_languages")

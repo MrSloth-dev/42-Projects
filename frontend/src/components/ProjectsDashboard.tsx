@@ -278,13 +278,13 @@ const ProjectsDashboard: React.FC<ProjectsDashboardProps> = () => {
                   <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${filtersExpanded ? "rotate-180" : ""}`} />
                 </Button>
 
-                {/* <Button
+                <Button
                   variant="42-outline"
                   onClick={() => setFilters({ solo: undefined, languages: [], specializations: undefined })}
                   className="h-10"
                 >
                   Clear Filters
-                </Button> */}
+                </Button>
 
               </div>
 
@@ -310,7 +310,7 @@ const ProjectsDashboard: React.FC<ProjectsDashboardProps> = () => {
                     </Select>
                   </div>
 
-                  {/* <div>
+                  <div>
                     <label className="block text-sm font-medium text-[color:var(--color-42-primary)] mb-2">Languages</label>
                     <Select
                       value={filters.languages.length === 0 ? "all" : filters.languages[0]}
@@ -336,15 +336,18 @@ const ProjectsDashboard: React.FC<ProjectsDashboardProps> = () => {
                         <SelectItem value="csharp">C#</SelectItem>
                         <SelectItem value="kotlin">Kotlin</SelectItem>
                         <SelectItem value="swift">Swift</SelectItem>
-                        <SelectItem value="dart">Dart</SelectItem>
+                        <SelectItem value="dart">Dart/Flutter</SelectItem>
+                        <SelectItem value="javascript">JavaScript</SelectItem>
+                        <SelectItem value="ruby">Ruby</SelectItem>
                         <SelectItem value="zig">Zig</SelectItem>
                         <SelectItem value="go">Go</SelectItem>
                         <SelectItem value="assembly">Assembly</SelectItem>
                         <SelectItem value="rust">Rust</SelectItem>
                         <SelectItem value="undefined">Undefined</SelectItem>
+                        <SelectItem value="na">Not Applicable</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div> */}
+                  </div>
 
                   <div>
                     <label className="block text-sm font-medium text-[color:var(--color-42-primary)] mb-2">Specialization</label>
@@ -432,7 +435,7 @@ const ProjectsDashboard: React.FC<ProjectsDashboardProps> = () => {
                         )}
                       </div>
                     </TableHead>
-                    {/*<TableHead>Languages</TableHead> */}
+                    <TableHead>Languages</TableHead>
                     <TableHead>Specializations</TableHead>
                     {/* <TableHead>Subject</TableHead>*/}
                   </TableRow>
@@ -466,7 +469,7 @@ const ProjectsDashboard: React.FC<ProjectsDashboardProps> = () => {
                             {project.solo ? "Solo" : "Group"}
                           </Badge>
                         </TableCell>
-                        {/* <TableCell>
+                        <TableCell>
                           <div className="flex flex-wrap gap-1">
                             {project.languages && project.languages.length > 0 ? (
                               project.languages.map((lang, index) => (
@@ -478,7 +481,7 @@ const ProjectsDashboard: React.FC<ProjectsDashboardProps> = () => {
                               <span className="text-[color:var(--color-muted-foreground)] text-sm">N/A</span>
                             )}
                           </div>
-                        </TableCell> */}
+                        </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
                           <div className="flex flex-wrap gap-1">
                             {project.specializations && project.specializations.length > 0 ? (

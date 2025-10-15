@@ -14,12 +14,15 @@ class Language(models.Model):
         ("csharp", "C#"),
         ("kotlin", "Kotlin"),
         ("swift", "Swift"),
-        ("dart", "Dart"),
+        ("dart", "Dart/Flutter"),
         ("zig", "Zig"),
+        ("ruby", "Ruby"),
+        ("javascript", "JavaScript"),
         ("go", "Go"),
         ("assembly", "Assembly"),
         ("rust", "Rust"),
         ("undefined", "Undefined"),
+        ("na", "Not Applicable"),
     ]
     name = models.CharField(max_length=50, choices=LANGUAGE_CHOICES, unique=True)
     display_name = models.CharField(max_length=100)

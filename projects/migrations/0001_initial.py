@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
             name='Language',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(choices=[('c', 'C'), ('cpp', 'C++'), ('python', 'Python'), ('ocaml', 'OCaml'), ('java', 'Java'), ('compiled_languages', 'Compiled Languages'), ('shell', 'Shell'), ('php', 'PHP'), ('csharp', 'C#'), ('kotlin', 'Kotlin'), ('swift', 'Swift'), ('dart', 'Dart'), ('zig', 'Zig'), ('go', 'Go'), ('assembly', 'Assembly'), ('rust', 'Rust'), ('undefined', 'Undefined')], max_length=50, unique=True)),
+                ('name', models.CharField(choices=[('c', 'C'), ('cpp', 'C++'), ('python', 'Python'), ('ocaml', 'OCaml'), ('javascript', 'JavaScript'), ('java', 'Java'), ('compiled_languages', 'Compiled Languages'), ('shell', 'Shell'), ('php', 'PHP'), ('csharp', 'C#'), ('kotlin', 'Kotlin'), ('ruby', 'Ruby'), ('swift', 'Swift'), ('dart', 'Dart/Flutter'), ('zig', 'Zig'), ('go', 'Go'), ('assembly', 'Assembly'), ('rust', 'Rust'), ('undefined', 'Undefined'), ('na', 'Not Applicable')], max_length=50, unique=True)),
                 ('display_name', models.CharField(max_length=100)),
             ],
         ),
