@@ -22,14 +22,13 @@ SECRET_KEY = config("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config("DEBUG", default=False, cast=bool)
 
+# Application URLs Configuration
+APP_DOMAIN = config("APP_DOMAIN", default="localhost,127.0.0.1")
+FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:3000")
+BACKEND_URL = config("BACKEND_URL", default="http://localhost")
+
 # Cloudflare Tunnel settings
-ALLOWED_HOSTS = [
-    "localhost",
-    "42projects.cc",
-    "192.168.1.64",
-    ".42projects.cc",
-    "nginx",
-]
+ALLOWED_HOSTS = [host.strip() for host in APP_DOMAIN.split(",")] + ["nginx", "localhost"]
 
 USE_X_FORWARDED_HOST = True
 USE_X_FORWARDED_PORT = True
@@ -113,16 +112,11 @@ OAUTH_42_CLIENT_SECRET = config("API_42_SECRET")
 OAUTH_42_AUTHORIZATION_URL = "https://api.intra.42.fr/oauth/authorize"
 OAUTH_42_TOKEN_URL = "https://api.intra.42.fr/oauth/token"
 OAUTH_42_USER_URL = "http://api.intra.42.fr/v2/me"
-OAUTH_42_REDIRECT_URI = "https://42projects.cc/api/auth/callback/"
+OAUTH_42_REDIRECT_URI = f"{BACKEND_URL}/api/auth/callback/"
 
 # CORS settings - Updated for Cloudflare Tunnel
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://192.168.1.64",
-    "https://42projects.cc",
-    "http://42projects.cc",
-]
+CORS_ALLOWED_ORIGINS = [url.strip() for url in FRONTEND_URL.split(",")]
 
 
 # Session and CSRF settings for HTTPS
@@ -131,11 +125,7 @@ SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SAMESITE = "None"
 CSRF_COOKIE_SECURE = True
-CSRF_TRUSTED_ORIGINS = [
-    "https://42projects.cc",
-    "http://42projects.cc",
-    "http://localhost:3000",
-]
+CSRF_TRUSTED_ORIGINS = [url.strip() for url in FRONTEND_URL.split(",")]
 
 # Security settings for production
 if not DEBUG:
