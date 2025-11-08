@@ -1,7 +1,8 @@
 ---
 services:
   nginx:
-      build: 
+      container_name: nginx
+      build:
         context: ./nginx
         dockerfile: Dockerfile
       ports:
@@ -17,6 +18,7 @@ services:
       networks:
         - app-network
   db:
+    container_name: db
     image: postgres:15
     environment:
       POSTGRES_DB: ${DB_NAME}
@@ -35,6 +37,7 @@ services:
         - app-network
 
   backend:
+    container_name: backend
     build: .
     ports:
       - "8000"
@@ -52,7 +55,8 @@ services:
         - app-network
 
   frontend:
-      build: 
+      container_name: frontend
+      build:
         context: ./frontend
         dockerfile: Dockerfile
       restart: unless-stopped
@@ -60,9 +64,10 @@ services:
         - backend
       networks:
         - app-network
-    
+
 
   cloudflared:
+    container_name: cloudflared
     image: cloudflare/cloudflared:latest
     command: tunnel --origincert /run/secrets/cloudflare_origin_cert --credentials-file /run/secrets/cloudflare_tunnel_credentials --url http://nginx:80 run 3cc69b7d-b6bc-4708-90c3-fc77426e7391
     secrets:
