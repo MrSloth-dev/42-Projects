@@ -71,26 +71,8 @@ services:
     restart: unless-stopped
     networks:
       - app-network
-  # backup:
-  #   image: postgres:15
-  #   depends_on:
-  #     - db
-  #   volumes:
-  #     - ./backups:/backups
-  #     - postgres_data:/var/lib/postgresql/data
-  #   environment:
-  #     POSTGRES_DB: ${DB_NAME}
-  #     POSTGRES_USER: ${DB_USER}
-  #     POSTGRES_PASSWORD: ${DB_PASSWORD}
-  #     PGPASSWORD: ${DB_PASSWORD}
-  #   command: |
-  #     bash -c "
-  #     while true; do
-  #       pg_dump -h db -U ${DB_USER} ${DB_NAME} > /backups/backup_$$(date +%Y%m%d_%H%M%S).sql
-  #       find /backups -name '*.sql' -mtime +7 -delete
-  #       sleep 86400
-  #     done"
-  #   restart: unless-stopped
+    profiles:
+      - production  # Only run when 'production' profile is active
 
 volumes:
   postgres_data:
