@@ -52,6 +52,12 @@ services:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
       - ./backups:/app/backups
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/projects/', timeout=10)"]
+      interval: 30s
+      timeout: 30s
+      start_period: 5s
+      retries: 3
     networks:
         - app-network
 
