@@ -1,4 +1,3 @@
-from requests_oauthlib import OAuth2Session
 import requests
 from decouple import config
 
