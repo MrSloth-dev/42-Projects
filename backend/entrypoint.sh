@@ -10,7 +10,7 @@ from django.conf import settings
 from django.db import connections
 from django.core.exceptions import ImproperlyConfigured
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'settings')
 django.setup()
 
 try:
@@ -52,7 +52,7 @@ if [ "$DJANGO_ENV" = "development" ]; then
     exec python manage.py runserver 0.0.0.0:8000
 else
     echo "Starting Gunicorn production server..."
-    exec gunicorn backend.wsgi:application \
+    exec gunicorn wsgi:application \
         --bind 0.0.0.0:8000 \
         --workers 3 \
         --timeout 120 \
