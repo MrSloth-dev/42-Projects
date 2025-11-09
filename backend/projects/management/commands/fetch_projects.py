@@ -91,7 +91,9 @@ class Command(BaseCommand):
                         page += 1
                         self.stdout.write(f"Processed page {page - 1}....")
                         self.stdout.write(
-                            self.style.SUCCESS(f"Successfully processed projects: {total_created} created, {total_updated} updated")
+                            self.style.SUCCESS(
+                                f"Successfully processed projects: {total_created} created, {total_updated} updated"
+                            )
                         )
             else:
                 while True:
@@ -127,7 +129,9 @@ class Command(BaseCommand):
                     page += 1
                     self.stdout.write(f"Processed page {page - 1}....")
                     self.stdout.write(
-                        self.style.SUCCESS(f"Successfully processed projects: {total_created} created, {total_updated} updated")
+                        self.style.SUCCESS(
+                            f"Successfully processed projects: {total_created} created, {total_updated} updated"
+                        )
                     )
         except Exception as e:
             self.stderr.write(self.style.ERROR(f"Error fetching projects: {str(e)}"))

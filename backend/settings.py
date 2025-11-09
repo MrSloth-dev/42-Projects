@@ -28,11 +28,14 @@ FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:3000")
 BACKEND_URL = config("BACKEND_URL", default="http://localhost")
 
 # Cloudflare Tunnel settings
-ALLOWED_HOSTS = [host.strip() for host in APP_DOMAIN.split(",")] + ["nginx", "localhost"]
+ALLOWED_HOSTS = [host.strip() for host in APP_DOMAIN.split(",")] + [
+    "nginx",
+    "localhost",
+]
 
 USE_X_FORWARDED_HOST = True
 USE_X_FORWARDED_PORT = True
-SECURE_PROXY_SSL_HEADER = ('HTTP_CF_VISITOR', '{"scheme":"https"}')
+SECURE_PROXY_SSL_HEADER = ("HTTP_CF_VISITOR", '{"scheme":"https"}')
 
 INSTALLED_APPS = [
     "django.contrib.admin",

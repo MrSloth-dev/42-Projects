@@ -4,49 +4,126 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Language',
+            name="Language",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(choices=[('c', 'C'), ('cpp', 'C++'), ('python', 'Python'), ('ocaml', 'OCaml'), ('javascript', 'JavaScript'), ('java', 'Java'), ('compiled_languages', 'Compiled Languages'), ('shell', 'Shell'), ('php', 'PHP'), ('csharp', 'C#'), ('kotlin', 'Kotlin'), ('ruby', 'Ruby'), ('swift', 'Swift'), ('dart', 'Dart/Flutter'), ('zig', 'Zig'), ('go', 'Go'), ('assembly', 'Assembly'), ('rust', 'Rust'), ('undefined', 'Undefined'), ('na', 'Not Applicable')], max_length=50, unique=True)),
-                ('display_name', models.CharField(max_length=100)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        choices=[
+                            ("c", "C"),
+                            ("cpp", "C++"),
+                            ("python", "Python"),
+                            ("ocaml", "OCaml"),
+                            ("javascript", "JavaScript"),
+                            ("java", "Java"),
+                            ("compiled_languages", "Compiled Languages"),
+                            ("shell", "Shell"),
+                            ("php", "PHP"),
+                            ("csharp", "C#"),
+                            ("kotlin", "Kotlin"),
+                            ("ruby", "Ruby"),
+                            ("swift", "Swift"),
+                            ("dart", "Dart/Flutter"),
+                            ("zig", "Zig"),
+                            ("go", "Go"),
+                            ("assembly", "Assembly"),
+                            ("rust", "Rust"),
+                            ("undefined", "Undefined"),
+                            ("na", "Not Applicable"),
+                        ],
+                        max_length=50,
+                        unique=True,
+                    ),
+                ),
+                ("display_name", models.CharField(max_length=100)),
             ],
         ),
         migrations.CreateModel(
-            name='Specialization',
+            name="Specialization",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(choices=[('common_core', 'Common Core'), ('algo_ai_data', 'Algo & AI & Data'), ('security', 'Security'), ('devops', 'Devops'), ('web_mobile', 'Web & Mobile'), ('system_kernel', 'System & Kernel'), ('graphics_gaming', 'Graphics & Gaming'), ('crypto_maths', 'Cryptography & Maths'), ('development', 'Development'), ('professional_exp', 'Professional Experience')], max_length=50, unique=True)),
-                ('display_name', models.CharField(max_length=100)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        choices=[
+                            ("common_core", "Common Core"),
+                            ("algo_ai_data", "Algo & AI & Data"),
+                            ("security", "Security"),
+                            ("devops", "Devops"),
+                            ("web_mobile", "Web & Mobile"),
+                            ("system_kernel", "System & Kernel"),
+                            ("graphics_gaming", "Graphics & Gaming"),
+                            ("crypto_maths", "Cryptography & Maths"),
+                            ("development", "Development"),
+                            ("professional_exp", "Professional Experience"),
+                        ],
+                        max_length=50,
+                        unique=True,
+                    ),
+                ),
+                ("display_name", models.CharField(max_length=100)),
             ],
         ),
         migrations.CreateModel(
-            name='Project',
+            name="Project",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('project_id', models.IntegerField(unique=True)),
-                ('name', models.CharField(max_length=100)),
-                ('slug', models.CharField(max_length=100)),
-                ('description', models.TextField(blank=True, null=True)),
-                ('difficulty', models.IntegerField(blank=True, null=True)),
-                ('parent_name', models.CharField(blank=True, max_length=100, null=True)),
-                ('objectives', models.JSONField(blank=True, default=list, null=True)),
-                ('estimate_time', models.IntegerField(blank=True, null=True)),
-                ('solo', models.BooleanField()),
-                ('xp_points', models.IntegerField(blank=True, null=True)),
-                ('prerequisites', models.JSONField(blank=True, default=list)),
-                ('subject_download_url', models.URLField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('languages', models.ManyToManyField(blank=True, to='projects.language')),
-                ('specializations', models.ManyToManyField(blank=True, to='projects.specialization')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("project_id", models.IntegerField(unique=True)),
+                ("name", models.CharField(max_length=100)),
+                ("slug", models.CharField(max_length=100)),
+                ("description", models.TextField(blank=True, null=True)),
+                ("difficulty", models.IntegerField(blank=True, null=True)),
+                (
+                    "parent_name",
+                    models.CharField(blank=True, max_length=100, null=True),
+                ),
+                ("objectives", models.JSONField(blank=True, default=list, null=True)),
+                ("estimate_time", models.IntegerField(blank=True, null=True)),
+                ("solo", models.BooleanField()),
+                ("xp_points", models.IntegerField(blank=True, null=True)),
+                ("prerequisites", models.JSONField(blank=True, default=list)),
+                ("subject_download_url", models.URLField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "languages",
+                    models.ManyToManyField(blank=True, to="projects.language"),
+                ),
+                (
+                    "specializations",
+                    models.ManyToManyField(blank=True, to="projects.specialization"),
+                ),
             ],
         ),
     ]
