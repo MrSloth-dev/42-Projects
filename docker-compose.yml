@@ -37,8 +37,9 @@ services:
         - app-network
 
   backend:
-    container_name: backend
-    build: .
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
       - "8000"
     env_file:
