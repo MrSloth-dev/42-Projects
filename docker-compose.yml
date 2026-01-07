@@ -1,7 +1,8 @@
 ---
 services:
   nginx:
-      build: 
+      container_name: nginx
+      build:
         context: ./nginx
         dockerfile: Dockerfile
       ports:
@@ -17,6 +18,7 @@ services:
       networks:
         - app-network
   db:
+    container_name: db
     image: postgres:15
     environment:
       POSTGRES_DB: ${DB_NAME}
@@ -35,7 +37,9 @@ services:
         - app-network
 
   backend:
-    build: .
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
       - "8000"
     env_file:
@@ -48,11 +52,18 @@ services:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
       - ./backups:/app/backups
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/projects/', timeout=10)"]
+      interval: 30s
+      timeout: 30s
+      start_period: 5s
+      retries: 3
     networks:
         - app-network
 
   frontend:
-      build: 
+      container_name: frontend
+      build:
         context: ./frontend
         dockerfile: Dockerfile
       restart: unless-stopped
@@ -60,9 +71,10 @@ services:
         - backend
       networks:
         - app-network
-    
+
 
   cloudflared:
+    container_name: cloudflared
     image: cloudflare/cloudflared:latest
     command: tunnel --origincert /run/secrets/cloudflare_origin_cert --credentials-file /run/secrets/cloudflare_tunnel_credentials --url http://nginx:80 run 3cc69b7d-b6bc-4708-90c3-fc77426e7391
     secrets:
@@ -71,26 +83,8 @@ services:
     restart: unless-stopped
     networks:
       - app-network
-  # backup:
-  #   image: postgres:15
-  #   depends_on:
-  #     - db
-  #   volumes:
-  #     - ./backups:/backups
-  #     - postgres_data:/var/lib/postgresql/data
-  #   environment:
-  #     POSTGRES_DB: ${DB_NAME}
-  #     POSTGRES_USER: ${DB_USER}
-  #     POSTGRES_PASSWORD: ${DB_PASSWORD}
-  #     PGPASSWORD: ${DB_PASSWORD}
-  #   command: |
-  #     bash -c "
-  #     while true; do
-  #       pg_dump -h db -U ${DB_USER} ${DB_NAME} > /backups/backup_$$(date +%Y%m%d_%H%M%S).sql
-  #       find /backups -name '*.sql' -mtime +7 -delete
-  #       sleep 86400
-  #     done"
-  #   restart: unless-stopped
+    profiles:
+      - production  # Only run when 'production' profile is active
 
 volumes:
   postgres_data:

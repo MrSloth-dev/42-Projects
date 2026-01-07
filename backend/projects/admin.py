@@ -244,6 +244,14 @@ class ProjectAdmin(admin.ModelAdmin):
 
     toggle_javascript.short_description = "Toggle JavaScript"
 
+    def toggle_java(self, request, queryset):
+        lang = Language.objects.get(name="java")
+        for project in queryset:
+            if lang in project.languages.all():
+                project.languages.remove(lang)
+            else:
+                project.languages.add(lang)
+
     toggle_java.short_description = "Toggle Java"
 
     def toggle_ocaml(self, request, queryset):

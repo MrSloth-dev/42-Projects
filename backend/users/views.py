@@ -34,7 +34,7 @@ def oauth_callback(request):
         # Handle direct OAuth callback from 42
         code = request.GET.get("code")
         if not code:
-            return redirect("https://42projects.cc/auth/callback?error=no_code")
+            return redirect(f"{settings.FRONTEND_URL}/auth/callback?error=no_code")
 
         # Process the OAuth code
         token_data = {
@@ -49,7 +49,7 @@ def oauth_callback(request):
         token_json = token_response.json()
 
         if "access_token" not in token_json:
-            return redirect("https://42projects.cc/auth/callback?error=token_failed")
+            return redirect(f"{settings.FRONTEND_URL}/auth/callback?error=token_failed")
 
         # Get user info from 42
         headers = {"Authorization": f"Bearer {token_json['access_token']}"}
@@ -57,7 +57,7 @@ def oauth_callback(request):
 
         if user_response.status_code != 200:
             return redirect(
-                "https://42projects.cc/auth/callback?error=user_info_failed"
+                f"{settings.FRONTEND_URL}/auth/callback?error=user_info_failed"
             )
 
         user_data = user_response.json()
@@ -84,11 +84,11 @@ def oauth_callback(request):
             login(request, user)
 
             # Redirect to dashboard after successful login
-            return redirect("https://42projects.cc/dashboard")
+            return redirect(f"{settings.FRONTEND_URL}/dashboard")
 
         except Exception:
             return redirect(
-                "https://42projects.cc/auth/callback?error=user_creation_failed"
+                f"{settings.FRONTEND_URL}/auth/callback?error=user_creation_failed"
             )
 
     # Handle POST requests (if frontend sends code)
