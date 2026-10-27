@@ -1,0 +1,2 @@
+[tools]
+opencode = { version = "latest", allow_builds = ["@opencode/cli"] }
