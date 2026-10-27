@@ -1,30 +1,11 @@
 #!/bin/bash
 set -e
 
-# Wait for database to be ready
-echo "Waiting for database..."
-while ! python -c "
-import os
-import django
-from django.conf import settings
-from django.db import connections
-from django.core.exceptions import ImproperlyConfigured
-
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'settings')
-django.setup()
-
-try:
-    connections['default'].cursor()
-    print('Database available!')
-except Exception as e:
-    print(f'Database not ready: {e}')
-    exit(1)
-"; do
-    echo "Database is unavailable - sleeping"
-    sleep 1
-done
-
-echo "Database is up - executing command"
+# SQLite lives on a volume shared with this container; make sure it exists.
+DB_DIR="${DB_DIR:-/app/data}"
+mkdir -p "$DB_DIR"
+echo "Database directory: $DB_DIR"
+ls -la "$DB_DIR"
 
 echo "Running migrations..."
 python manage.py migrate --noinput
@@ -52,9 +33,11 @@ if [ "$DJANGO_ENV" = "development" ]; then
     exec python manage.py runserver 0.0.0.0:8000
 else
     echo "Starting Gunicorn production server..."
+    # SQLite allows a single writer; two workers give headroom for the read-heavy
+    # API without piling up write contention.
     exec gunicorn wsgi:application \
         --bind 0.0.0.0:8000 \
-        --workers 3 \
+        --workers 2 \
         --timeout 120 \
         --keep-alive 2 \
         --max-requests 1000 \

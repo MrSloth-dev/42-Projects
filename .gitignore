@@ -1,5 +1,10 @@
 .env
 .venv/
+data/
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+backups/
 *.pyc
 __pycache__/
 package-lock.json

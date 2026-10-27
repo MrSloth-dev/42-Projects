@@ -14,6 +14,10 @@ from pathlib import Path
 from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+# The directory holding settings.py, manage.py and the apps: /app in the image,
+# backend/ in a local checkout. BASE_DIR is its parent, so it must not be used
+# for writable state (it resolves to "/" inside the container).
+APP_DIR = Path(__file__).resolve().parent
 
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -82,14 +86,26 @@ TEMPLATES = [
 WSGI_APPLICATION = "wsgi.application"
 
 
+DATA_DIR = Path(config("DB_DIR", default=str(APP_DIR / "data")))
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+BACKUP_DIR = Path(config("BACKUP_DIR", default=str(DATA_DIR / "backups")))
+
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": config("DB_NAME"),
-        "USER": config("DB_USER"),
-        "PASSWORD": config("DB_PASSWORD"),
-        "HOST": config("DB_HOST", default="db"),
-        "PORT": config("DB_PORT", default="5432"),
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": DATA_DIR / "db.sqlite3",
+        "OPTIONS": {
+            # WAL keeps readers running while a write is in flight, and IMMEDIATE
+            # transactions take the write lock up front instead of failing later
+            # when a deferred transaction tries to upgrade.
+            "init_command": (
+                "PRAGMA journal_mode=WAL;"
+                "PRAGMA synchronous=NORMAL;"
+                "PRAGMA foreign_keys=ON;"
+            ),
+            "transaction_mode": "IMMEDIATE",
+            "timeout": 20,
+        },
     }
 }
 

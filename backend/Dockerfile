@@ -1,45 +1,25 @@
-FROM python:3.11-slim AS builder
-
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*;
-
-WORKDIR /app
-
-COPY requirements.txt .
-
-RUN pip install --no-cache-dir --user -r requirements.txt;
-
 FROM python:3.11-slim
 
-RUN apt-get update && apt-get install -y \
-    libpq5 \
-    && rm -rf /var/lib/apt/lists/*;
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-RUN groupadd -r django && useradd -r -g django django;
-
-COPY --from=builder /root/.local /home/django/.local
+RUN groupadd -r django && useradd -r -g django django
 
 WORKDIR /app
+
+# Pure-Python dependencies only: SQLite ships with the interpreter, so there is
+# no libpq to build or link.
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN mkdir -p /app/staticfiles /app/media
+RUN mkdir -p /app/data /app/staticfiles /app/media \
+    && chmod +x entrypoint.sh \
+    && chown -R django:django /app
 
-COPY entrypoint.sh .
-RUN chmod +x entrypoint.sh && \
-    chown -R django:django /app;
 USER django
 
-ENV PATH=/home/django/.local/bin:$PATH
-
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
 EXPOSE 8000
-
-COPY entrypoint.sh .;
-RUN chmod +x entrypoint.sh;
 
 CMD ["./entrypoint.sh"]
