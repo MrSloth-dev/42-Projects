@@ -1,12 +1,13 @@
 FROM nginx:alpine
 
-# Copy custom nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Config is a template: entrypoint.sh fills in the runtime DNS resolver.
+COPY nginx.conf /etc/nginx/templates/default.conf.template
+COPY entrypoint.sh /entrypoint.sh
 
-# Create directories for SSL certificates (for future use)
-RUN mkdir -p /etc/ssl/certs /etc/ssl/private
-
-# Remove default nginx index page
-RUN rm -rf /usr/share/nginx/html/*
+RUN chmod +x /entrypoint.sh \
+    && mkdir -p /etc/ssl/certs /etc/ssl/private \
+    && rm -rf /usr/share/nginx/html/*
 
 EXPOSE 80 443
+
+CMD ["/entrypoint.sh"]

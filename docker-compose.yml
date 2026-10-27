@@ -6,8 +6,8 @@ services:
         context: ./nginx
         dockerfile: Dockerfile
       ports:
-        - "80:80"
-        - "443:443"
+        - "${HTTP_PORT:-8080}:80"
+        - "${HTTPS_PORT:-8443}:443"
       volumes:
         - static_volume:/app/staticfiles:ro
         - media_volume:/app/media:ro
