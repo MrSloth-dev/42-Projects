@@ -1,7 +1,11 @@
+import logging
+
 from django.core.management.base import BaseCommand
 
 from projects.models import Project, Specialization
 from projects.services.api_client import API42Client
+
+logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -134,6 +138,7 @@ class Command(BaseCommand):
                         )
                     )
         except Exception as e:
+            logger.exception("Error fetching projects from cursus %s", cursus_id)
             self.stderr.write(self.style.ERROR(f"Error fetching projects: {str(e)}"))
 
     def _save_project(self, data):
@@ -154,7 +159,7 @@ class Command(BaseCommand):
             "prerequisites": self._extract_prerequisites(data),
             "subject_download_url": self._get_subject_url(data),
         }
-        print(f"trying to save {defaults.get('slug', '')}")
+        logger.debug("Saving project %s (%s)", data.get("slug"), data.get("id"))
         project, created = Project.objects.update_or_create(
             project_id=data["id"], defaults=defaults
         )
