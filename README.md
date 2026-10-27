@@ -1,11 +1,19 @@
-# 42Projects
+# Project Navigator
 
 ##### A web application that helps 42 students discover and explore 42 School projects with filtering, searching, and comprehensive project information.
 
-### Visit here! [https://42projects.cc](https://42projects.cc)
+### Run it
+
+```sh
+cp .env.example .env   # add your 42 OAuth credentials
+docker compose up --build
+```
+
+Open http://localhost:8080. Setup, local dev, seeding and troubleshooting live in
+[RUNNING.md](./RUNNING.md).
+
 ![landing_page](assets/landing_page.png)
 ![dashboard](assets/dashboard.png)
-![filters](assets/filters.png)
 
 ## Table of Contents
 
@@ -21,7 +29,7 @@
 
 ## Overview
 
-42Projects provides a streamlined way to browse outer core and common core projects at 42 School. Instead of navigating through multiple pages on 42's intranet, students can view all projects in one dynamic, filterable table with comprehensive project details.
+Project Navigator provides a streamlined way to browse outer core and common core projects at 42 School. Instead of navigating through multiple pages on 42's intranet, students can view all projects in one dynamic, filterable table with comprehensive project details.
 
 ### What Problem Does It Solve?
 
@@ -54,13 +62,13 @@
 - Direct access to project subjects (PDF downloads) (soon..)
 
 ###  Modern User Experience
-- Gruvbox-inspired dark theme
-- Keyboard shortcuts (Ctrl+K for search)
+- Light, high-contrast interface with Geist typography
+- Keyboard shortcuts (Ctrl+K / ⌘K for search)
 - Fast loading and smooth interactions
 
 ## For Students
 
-Whether you're planning your learning path or looking for your next challenge, 42Projects helps you:
+Whether you're planning your learning path or looking for your next challenge, Project Navigator helps you:
 
 - **Discover Projects**: Find projects that match your interests and skill level
 - **Plan Your Path**: Understand prerequisites and progression through specializations
@@ -72,21 +80,21 @@ Whether you're planning your learning path or looking for your next challenge, 4
 
 ### Backend
 - **Framework**: Django with Django REST Framework
-- **Database**: PostgreSQL
+- **Database**: SQLite (a single file on the backend's data volume)
 - **Authentication**: 42 OAuth integration
 - **API**: RESTful API with filtering and pagination
 
 ### Frontend
 - **Framework**: React with TypeScript
-- **Styling**: Tailwind CSS with custom design system
+- **Styling**: Tailwind CSS with the Project Navigator design system ([DESIGN.md](./DESIGN.md))
 - **State Management**: React hooks and context
-- **Build Tool**: Vite
+- **Build Tool**: Vite, run with Bun 1.4
 
 ### Infrastructure
 - **Containerization**: Docker and Docker Compose
 - **Reverse Proxy**: Nginx
 - **SSL/CDN**: Cloudflare Tunnel
-- **Database**: PostgreSQL
+- **Database**: SQLite file inside the backend container (no database server)
 
 ## Contributing
 
@@ -136,7 +144,7 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 
 ### Reporting Issues
 
-Found a bug or have a feature request? Please check our [GitHub Issues](https://github.com/yourusername/42projects/issues) page:
+Found a bug or have a feature request? Please check our [GitHub Issues](https://github.com/MrSloth-dev/42-Projects/issues) page:
 
 1. Search existing issues to avoid duplicates
 2. Use the provided issue templates
@@ -177,6 +185,15 @@ Found a bug or have a feature request? Please check our [GitHub Issues](https://
 - [ ] Offline functionality
 
 ## Changelog
+
+### [2.0.0] - 2026-10-25
+
+#### Project Navigator redesign
+- Rebranded from 42Projects to Project Navigator (independent student project)
+- New "Vibrant Peer Tech" design system: light canvas, magenta + cyan accents, Geist typography
+- Rebuilt landing page and project explorer with a calmer, denser data layout
+- Client-side pagination, sortable table and removable filter chips
+- New project detail panel inside the table
 
 ### [1.1.0] - 2025-09-08
 
