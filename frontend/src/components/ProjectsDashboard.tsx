@@ -704,30 +704,27 @@ const ProjectsDashboard: React.FC = () => {
                     return (
                       <React.Fragment key={project.id}>
                         <TableRow
-                          className={expanded ? 'bg-surface-low/50' : undefined}
+                          onClick={() => toggleRowExpansion(project.id)}
+                          className={`cursor-pointer ${expanded ? 'bg-surface-low/50' : ''}`}
                           data-state={expanded ? 'selected' : undefined}
                         >
                           <TableCell>
-                            <button
-                              onClick={() => toggleRowExpansion(project.id)}
-                              className="text-left"
-                            >
-                              <div className="font-semibold tracking-[-0.01em] text-foreground transition-colors hover:text-[color:var(--brand-magenta-deep)]">
+                            <div>
+                              <div className="font-semibold tracking-[-0.01em] text-foreground">
                                 {project.name}
                               </div>
                               <div className="mt-0.5 text-[11px] tracking-[0.02em] text-muted-foreground">
                                 {project.slug}
                               </div>
-                            </button>
+                            </div>
                           </TableCell>
                           <TableCell className="max-w-[380px]">
-                            <button
-                              onClick={() => toggleRowExpansion(project.id)}
-                              className="line-clamp-2 text-left text-[13px] leading-5 text-muted-foreground transition-colors hover:text-foreground"
+                            <div
+                              className="line-clamp-2 text-left text-[13px] leading-5 text-muted-foreground"
                               title={project.description}
                             >
                               {project.description || 'No description'}
-                            </button>
+                            </div>
                           </TableCell>
                           <TableCell className="font-semibold text-[color:var(--brand-magenta)]">
                             {formatNumber(project.xp_points)}
@@ -773,7 +770,10 @@ const ProjectsDashboard: React.FC = () => {
                           </TableCell>
                           <TableCell>
                             <button
-                              onClick={() => toggleRowExpansion(project.id)}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                toggleRowExpansion(project.id);
+                              }}
                               aria-expanded={expanded}
                               aria-label={`${expanded ? 'Collapse' : 'Expand'} ${
                                 project.name
@@ -793,7 +793,7 @@ const ProjectsDashboard: React.FC = () => {
                           <TableRow className="hover:bg-transparent">
                             <TableCell colSpan={8} className="p-0">
                               <div className="border-l-2 border-[color:var(--brand-magenta)] bg-surface-low/60 px-6 py-6">
-                                <div className="mb-5 flex items-start justify-between gap-4">
+                                <div className="mb-5">
                                   <div>
                                     <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                                       Project brief
@@ -802,13 +802,6 @@ const ProjectsDashboard: React.FC = () => {
                                       {project.name}
                                     </h3>
                                   </div>
-                                  <button
-                                    onClick={() => toggleRowExpansion(project.id)}
-                                    className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
-                                  >
-                                    Collapse
-                                    <ChevronUp className="h-3.5 w-3.5" />
-                                  </button>
                                 </div>
 
                                 <div className="grid gap-8 lg:grid-cols-12">
