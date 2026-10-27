@@ -3,21 +3,28 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
   {
     variants: {
       variant: {
         default:
-          "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+          "bg-[color:var(--brand-magenta-soft)] text-[color:var(--brand-magenta-deep)]",
         secondary:
-          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+          "bg-[color:var(--brand-cyan-soft)] text-secondary-foreground",
+        neutral:
+          "bg-surface-low text-muted-foreground",
+        outline:
+          "border border-border bg-card text-muted-foreground",
         destructive:
-          "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-        outline: "text-foreground",
-        // 42 Projects Gruvbox variants
-        "42-type": "text-[color:var(--color-42-accent)] border-[color:var(--color-42-accent)]/50 bg-[color:var(--color-42-surface-variant)]/50",
-        "42-language": "bg-[color:var(--color-42-surface)] text-[color:var(--color-42-primary)] border-[color:var(--color-border)]",
-        "42-count": "text-[color:var(--color-42-primary)] border-[color:var(--color-42-primary)]/50 bg-[color:var(--color-42-surface-variant)]/50",
+          "bg-destructive/10 text-destructive",
+        brand:
+          "bg-[color:var(--brand-magenta-soft)] text-[color:var(--brand-magenta-deep)]",
+        cyan:
+          "bg-[color:var(--brand-cyan-soft)] text-secondary-foreground",
+        language:
+          "border border-border bg-card text-foreground/70",
+        "brand-solid":
+          "bg-primary text-primary-foreground",
       },
     },
     defaultVariants: {
@@ -36,4 +43,5 @@ function Badge({ className, variant, ...props }: BadgeProps) {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export { Badge, badgeVariants }

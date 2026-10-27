@@ -1,37 +1,135 @@
-import React, { useState, useEffect } from 'react';
-import { authApi } from '../services/api.js';
-import { Search, /*Download,*/ ChevronDown, Filter, ChevronUp } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  ArrowUpRight,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  ChevronsUpDown,
+  Filter,
+  LogOut,
+  RotateCcw,
+  Search,
+  X,
+} from 'lucide-react';
+import { authApi, projectsApi } from '../services/api.js';
 import type { Project } from '../services/api.js';
-import { projectsApi } from '../services/api.js';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Logo } from './Logo';
+import SiteFooter from './SiteFooter';
 
-interface ProjectsDashboardProps { }
+const PAGE_SIZE = 25;
+const isMac =
+  typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
-const ProjectsDashboard: React.FC<ProjectsDashboardProps> = () => {
+const languageLabels: Record<string, string> = {
+  c: 'C',
+  cpp: 'C++',
+  python: 'Python',
+  ocaml: 'OCaml',
+  java: 'Java',
+  compiled_languages: 'Compiled languages',
+  functional_languages: 'Functional languages',
+  shell: 'Shell',
+  php: 'PHP',
+  csharp: 'C#',
+  kotlin: 'Kotlin',
+  swift: 'Swift',
+  dart: 'Dart / Flutter',
+  javascript: 'JavaScript',
+  ruby: 'Ruby',
+  zig: 'Zig',
+  go: 'Go',
+  assembly: 'Assembly',
+  rust: 'Rust',
+  undefined: 'Undefined',
+  na: 'Not applicable',
+};
+
+const specializationLabels: Record<string, string> = {
+  common_core: 'Common Core',
+  algo_ai_data: 'Algo & AI & Data',
+  security: 'Security',
+  devops: 'Devops',
+  web_mobile: 'Web & Mobile',
+  system_kernel: 'System & Kernel',
+  graphics_gaming: 'Graphics & Gaming',
+  crypto_maths: 'Cryptography & Maths',
+  development: 'Development',
+  professional_exp: 'Professional Experience',
+};
+
+const trackTones: Record<string, string> = {
+  common_core:
+    'bg-[color:var(--brand-magenta-soft)] text-[color:var(--brand-magenta-deep)]',
+  algo_ai_data: 'bg-[#ecfdf3] text-[#15803d]',
+  security: 'bg-[#fee2e2] text-[#b91c1c]',
+  devops: 'bg-[color:var(--brand-cyan-soft)] text-secondary-foreground',
+  web_mobile: 'bg-[color:var(--brand-cyan-soft)] text-secondary-foreground',
+  system_kernel: 'bg-[#fff4e5] text-[#b45309]',
+  graphics_gaming: 'bg-[#fce7f3] text-[#be185d]',
+  crypto_maths: 'bg-[#f3e8ff] text-[#7e22ce]',
+  development: 'bg-[#e8f1ff] text-[#1d4ed8]',
+  professional_exp: 'bg-surface-low text-muted-foreground',
+};
+
+const trackClass = (name?: string) =>
+  (name && trackTones[name]) || 'bg-surface-low text-muted-foreground';
+
+type Filters = {
+  solo: boolean | undefined;
+  languages: string[];
+  specializations: string | undefined;
+};
+
+const defaultFilters: Filters = {
+  solo: undefined,
+  languages: [],
+  specializations: undefined,
+};
+
+const loadFilters = (): Filters => {
+  try {
+    const saved = localStorage.getItem('projectFilters');
+    return saved ? { ...defaultFilters, ...JSON.parse(saved) } : defaultFilters;
+  } catch {
+    return defaultFilters;
+  }
+};
+
+const formatNumber = (value: number | null | undefined) =>
+  value == null ? '—' : value.toLocaleString('en-US');
+
+const ProjectsDashboard: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [filters, setFilters] = useState(() => {
-    const saved = localStorage.getItem('projectFilters')
-    return saved ? JSON.parse(saved) : {
-      solo: undefined as boolean | undefined,
-      languages: [] as string[],
-      specializations: undefined as string | undefined,
-    }
-  });
+  const [filters, setFilters] = useState<Filters>(loadFilters);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
-  const [filtersExpanded, setFiltersExpanded] = useState(false);
-  const [sortBy, setSortBy] = useState<string>('');
+  const [sortBy, setSortBy] = useState<string>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [page, setPage] = useState(1);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<{ login_42?: string } | null>(null);
 
   useEffect(() => {
     localStorage.setItem('projectFilters', JSON.stringify(filters));
@@ -47,7 +145,7 @@ const ProjectsDashboard: React.FC<ProjectsDashboardProps> = () => {
       if (e.key === 'Escape') {
         setSearch('');
       }
-      if (e.ctrlKey && e.key === 'k') {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         document.getElementById('search')?.focus();
       }
@@ -69,14 +167,13 @@ const ProjectsDashboard: React.FC<ProjectsDashboardProps> = () => {
       setLoading(false);
     }
   };
+
   const checkAuthentication = async () => {
     try {
-      await authApi.getCurrentUser();
       const response = await authApi.getCurrentUser();
-      setUser(response.data);
+      setUser(response.data as { login_42?: string });
       setIsAuthenticated(true);
-
-    } catch (err) {
+    } catch {
       setIsAuthenticated(false);
     } finally {
       setAuthLoading(false);
@@ -95,27 +192,23 @@ const ProjectsDashboard: React.FC<ProjectsDashboardProps> = () => {
 
   const handleLogout = async () => {
     try {
-      await authApi.logout()
-      setIsAuthenticated(false)
-      setUser(null)
-      window.location.href = '/'
+      await authApi.logout();
     } catch (err) {
-      console.error('Logout failed ', err)
-      setIsAuthenticated(false)
-      setUser(null)
-      window.location.href = '/'
+      console.error('Logout failed ', err);
+    } finally {
+      setIsAuthenticated(false);
+      setUser(null);
+      window.location.href = '/';
     }
   };
 
-
   const toggleRowExpansion = (projectId: number) => {
-    const newExpandedRows = new Set(expandedRows);
-    if (newExpandedRows.has(projectId)) {
-      newExpandedRows.delete(projectId);
-    } else {
-      newExpandedRows.add(projectId);
-    }
-    setExpandedRows(newExpandedRows);
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(projectId)) next.delete(projectId);
+      else next.add(projectId);
+      return next;
+    });
   };
 
   const handleSort = (column: string) => {
@@ -123,441 +216,738 @@ const ProjectsDashboard: React.FC<ProjectsDashboardProps> = () => {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
       setSortBy(column);
-      setSortOrder('asc');
+      setSortOrder(column === 'xp_points' || column === 'estimate_time' ? 'desc' : 'asc');
     }
   };
 
-  const filteredProjects = projects.filter((project) => {
-    const matchesSearch = !search ||
-      project.name.toLowerCase().includes(search.toLowerCase()) ||
-      (project.description && project.description.toLowerCase().includes(search.toLowerCase()));
+  const filteredProjects = useMemo(() => {
+    const term = search.trim().toLowerCase();
 
-    const matchesSolo = filters.solo === undefined || project.solo === filters.solo;
+    return projects.filter((project) => {
+      const matchesSearch =
+        !term ||
+        project.name.toLowerCase().includes(term) ||
+        (project.description || '').toLowerCase().includes(term) ||
+        (project.languages || []).some((lang) =>
+          (lang.display_name || lang.name).toLowerCase().includes(term)
+        ) ||
+        (project.specializations || []).some((spec) =>
+          (spec.display_name || spec.name).toLowerCase().includes(term)
+        );
 
-    const matchesLanguages = filters.languages.length === 0 ||
-      (project.languages && project.languages.length > 0 &&
-        project.languages.some(lang => {
-          return filters.languages.includes(lang.name);
-        }));
+      const matchesSolo = filters.solo === undefined || project.solo === filters.solo;
 
-    const matchesSpecialization = !filters.specializations ||
-      (project.specializations && project.specializations.length > 0 &&
-        project.specializations.some(spec => spec.name === filters.specializations));
+      const matchesLanguages =
+        filters.languages.length === 0 ||
+        (project.languages || []).some((lang) => filters.languages.includes(lang.name));
 
-    return matchesSearch && matchesSolo && matchesLanguages && matchesSpecialization;
-  });
+      const matchesSpecialization =
+        !filters.specializations ||
+        (project.specializations || []).some(
+          (spec) => spec.name === filters.specializations
+        );
 
-  const sortedProjects = [...filteredProjects].sort((a, b) => {
-    if (!sortBy) return 0;
+      return (
+        matchesSearch && matchesSolo && matchesLanguages && matchesSpecialization
+      );
+    });
+  }, [projects, search, filters]);
 
-    let aVal: any = a[sortBy as keyof Project];
-    let bVal: any = b[sortBy as keyof Project];
+  const sortedProjects = useMemo(() => {
+    return [...filteredProjects].sort((a, b) => {
+      if (!sortBy) return 0;
 
-    if (aVal === null || aVal === undefined) aVal = '';
-    if (bVal === null || bVal === undefined) bVal = '';
+      let aVal: unknown = a[sortBy as keyof Project];
+      let bVal: unknown = b[sortBy as keyof Project];
 
-    if (typeof aVal === 'string') {
-      aVal = aVal.toLowerCase();
-      bVal = bVal.toLowerCase();
+      if (aVal === null || aVal === undefined) aVal = '';
+      if (bVal === null || bVal === undefined) bVal = '';
+
+      if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+      if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+
+      if ((aVal as never) < (bVal as never)) return sortOrder === 'asc' ? -1 : 1;
+      if ((aVal as never) > (bVal as never)) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [filteredProjects, sortBy, sortOrder]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, filters]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedProjects.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const visibleProjects = sortedProjects.slice(pageStart, pageStart + PAGE_SIZE);
+
+  const stats = useMemo(() => {
+    const solo = projects.filter((project) => project.solo).length;
+    const tracks = new Set(
+      projects.flatMap((project) => (project.specializations || []).map((s) => s.name))
+    );
+    return { total: projects.length, solo, tracks: tracks.size };
+  }, [projects]);
+
+  const activeFilterCount =
+    (filters.solo === undefined ? 0 : 1) +
+    filters.languages.length +
+    (filters.specializations ? 1 : 0);
+
+  const sortLabel =
+    sortBy === 'xp_points'
+      ? `XP ${sortOrder === 'asc' ? 'low → high' : 'high → low'}`
+      : sortBy === 'estimate_time'
+        ? `Time ${sortOrder === 'asc' ? 'low → high' : 'high → low'}`
+        : sortBy === 'solo'
+          ? `Mode ${sortOrder === 'asc' ? 'A → Z' : 'Z → A'}`
+          : `Name ${sortOrder === 'asc' ? 'A → Z' : 'Z → A'}`;
+
+  const SortIcon = ({ column }: { column: string }) => {
+    if (sortBy !== column) {
+      return <ChevronsUpDown className="h-3.5 w-3.5 opacity-40" />;
     }
+    return sortOrder === 'asc' ? (
+      <ChevronUp className="h-3.5 w-3.5" />
+    ) : (
+      <ChevronDown className="h-3.5 w-3.5" />
+    );
+  };
 
-    if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
-    if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
-    return 0;
-  });
-
-  if (authLoading) return (
-    <div className="min-h-screen bg-gruvbox-gradient flex items-center justify-center">
-      <div className="text-[color:var(--color-42-secondary)] text-lg font-medium">Loading...</div>
-    </div>
-  );
-
-  if (!isAuthenticated) return (
-    <div className="min-h-screen bg-gruvbox-gradient">
-      <header className="bg-gruvbox-surface/95 backdrop-blur-sm border-b border-[color:var(--color-border)] sticky top-0 z-10">
-        <div className="w-full px-12 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-[color:var(--color-42-primary)] to-[color:var(--color-42-secondary)] bg-clip-text text-transparent">
-              42 Projects
-            </h1>
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Logo />
+          <div className="h-0.5 w-24 overflow-hidden rounded-full bg-surface-low">
+            <div className="h-full w-1/2 animate-pulse rounded-full bg-[color:var(--brand-magenta)]" />
           </div>
         </div>
-      </header>
+      </div>
+    );
+  }
 
-      <main className="flex items-center justify-center min-h-[80vh]">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-[color:var(--color-42-primary)] mb-4">Welcome to 42 Projects</h2>
-          <p className="text-[color:var(--color-muted-foreground)] mb-8">Please login with your 42 account to access the project database</p>
-          <Button
-            variant="42-primary"
-            onClick={handleLogin}
-            className="text-lg px-8 py-3"
-          >
-            Login with 42
-          </Button>
-        </div>
-      </main>
-    </div>
-  );
-
-  if (loading) return (
-    <div className="min-h-screen bg-gruvbox-gradient flex items-center justify-center">
-      <div className="text-[color:var(--color-42-secondary)] text-lg font-medium">Loading projects...</div>
-    </div>
-  );
-
-  if (error) return (
-    <div className="min-h-screen bg-gruvbox-gradient flex items-center justify-center">
-      <div className="text-[color:var(--color-destructive)] text-lg font-medium">Error: {error}</div>
-    </div>
-  );
+  if (!isAuthenticated) {
+    return (
+      <div className="grid-canvas flex min-h-screen flex-col bg-background">
+        <header className="border-b border-border bg-card">
+          <div className="mx-auto flex h-20 w-full max-w-[1280px] items-center justify-between px-6 lg:px-12">
+            <Logo />
+            <Button size="sm" onClick={handleLogin}>
+              Sign in with 42
+            </Button>
+          </div>
+        </header>
+        <main className="flex flex-1 items-center justify-center px-6 py-16">
+          <div className="w-full max-w-lg rounded-3xl border border-border bg-card p-10 text-center">
+            <span className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--brand-magenta)]" />
+              Members only
+            </span>
+            <h1 className="mt-5 text-3xl font-bold tracking-[-0.02em]">
+              Sign in to explore projects
+            </h1>
+            <p className="mt-3 text-[15px] leading-6 text-muted-foreground">
+              Project Navigator reads the curriculum through your 42 account, so you
+              only see the projects available to you.
+            </p>
+            <Button className="mt-7 w-full" size="lg" onClick={handleLogin}>
+              Sign in with 42
+              <ArrowUpRight />
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gruvbox-gradient">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-gruvbox-surface/95 backdrop-blur-sm border-b border-[color:var(--color-border)] sticky top-0 z-10">
-        <div className="w-full px-12 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-[color:var(--color-42-primary)] to-[color:var(--color-42-secondary)] bg-clip-text text-transparent">
-              42 Projects
-            </h1>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <span className="text-[color:var(--color-42-primary)] font-medium">{user?.login_42}</span>
-              </div>
-              <Button
-                variant="42-outline"
-                size="sm"
-                onClick={handleLogout}
-              >
-                Log out
-              </Button>
+      <header className="surface-chrome sticky top-0 z-30 border-b border-border">
+        <div className="mx-auto flex h-20 w-full max-w-[1280px] items-center justify-between px-6 lg:px-12">
+          <Logo />
+
+          <nav className="hidden items-center gap-8 text-sm font-medium text-muted-foreground lg:flex">
+            <span className="border-b-2 border-[color:var(--brand-magenta)] pb-0.5 text-foreground">
+              Explore
+            </span>
+            <a href="/#tracks" className="transition-colors hover:text-foreground">
+              Tracks
+            </a>
+            <a href="/#how-it-works" className="transition-colors hover:text-foreground">
+              How it works
+            </a>
+          </nav>
+
+          <div className="flex items-center gap-3">
+            <div className="hidden items-center gap-2.5 sm:flex">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[color:var(--brand-cyan-soft)] text-xs font-bold text-secondary-foreground">
+                {(user?.login_42 || '42').slice(0, 2).toUpperCase()}
+              </span>
+              <span className="text-sm font-medium text-foreground">
+                {user?.login_42}
+              </span>
             </div>
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              <LogOut />
+              Sign out
+            </Button>
           </div>
         </div>
       </header>
 
-      <main className="w-full px-12 py-6">
-        {/* Search & Filter Panel */}
-        <Card className="mb-8">
-          <CardContent className="p-6">
-            <div className="flex flex-col gap-4">
-              <div className="flex gap-4 items-end">
-                <div className="flex-1">
-                  <label htmlFor="search" className="block text-sm font-medium text-[color:var(--color-42-primary)] mb-2">
-                    Search Projects
-                  </label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[color:var(--color-42-accent)] h-4 w-4" />
-                    <Input
-                      id="search"
-                      type="text"
-                      placeholder="Search by name or description... (Ctrl + K)"
-                      value={search}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
-                      className="pl-10 pr-10"
-                    />
-                    {search && (
-                      <button
-                        onClick={() => setSearch('')}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-orange-300"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                </div>
+      <main className="mx-auto w-full max-w-[1280px] px-6 py-10 lg:px-12">
+        {/* Page intro */}
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--brand-magenta)]" />
+              Curriculum index · {stats.total} projects
+            </p>
+            <h1 className="mt-2 text-[34px] font-bold leading-10 tracking-[-0.025em] lg:text-[40px] lg:leading-[46px]">
+              Project Explorer
+            </h1>
+          </div>
 
-                <Button
-                  variant="42-outline"
-                  onClick={() => setFiltersExpanded(!filtersExpanded)}
-                  className="h-10"
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-semibold">
+              {stats.total} total
+            </span>
+            <span className="rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-semibold">
+              {stats.solo} solo
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[color:var(--brand-cyan-soft)] px-3.5 py-1.5 text-xs font-semibold text-secondary-foreground">
+              <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--brand-cyan)]" />
+              Live data
+            </span>
+          </div>
+        </div>
+
+        {/* Controls */}
+        <section className="mt-8 rounded-2xl border border-border bg-card p-5 lg:p-6">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              id="search"
+              type="text"
+              placeholder="Search by project name, description, language or track…"
+              value={search}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+              className="h-12 rounded-full pl-11 pr-24"
+            />
+            <div className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-1">
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  aria-label="Clear search"
+                  className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface-low hover:text-foreground"
                 >
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filters
-                  <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${filtersExpanded ? "rotate-180" : ""}`} />
-                </Button>
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+              <kbd className="hidden rounded-md border border-border px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground sm:block">
+                {isMac ? '⌘K' : 'Ctrl K'}
+              </kbd>
+            </div>
+          </div>
 
-                <Button
-                  variant="42-outline"
-                  onClick={() => setFilters({ solo: undefined, languages: [], specializations: undefined })}
-                  className="h-10"
-                >
-                  Clear Filters
-                </Button>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <div className="flex items-center rounded-full border border-border p-0.5">
+              {[
+                { label: `All (${stats.total})`, value: undefined },
+                { label: 'Solo', value: true },
+                { label: 'Group', value: false },
+              ].map((option) => {
+                const active = filters.solo === option.value;
+                return (
+                  <button
+                    key={option.label}
+                    onClick={() => setFilters({ ...filters, solo: option.value })}
+                    className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                      active
+                        ? 'bg-[color:var(--brand-magenta)] text-white'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
 
-              </div>
+            <Select
+              value={filters.languages.length === 0 ? 'all' : filters.languages[0]}
+              onValueChange={(value: string) =>
+                setFilters({
+                  ...filters,
+                  languages: value === 'all' ? [] : [value],
+                })
+              }
+            >
+              <SelectTrigger className="h-9 w-auto gap-2 px-3.5 text-xs font-semibold">
+                <SelectValue placeholder="Language" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Language: Any</SelectItem>
+                {Object.entries(languageLabels).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-              {filtersExpanded && (
-                <div className="flex gap-4 pt-4 border-t border-[color:var(--color-border)]">
-                  <div>
-                    <label className="block text-sm font-medium text-[color:var(--color-42-primary)] mb-2">Solo / Group</label>
-                    <Select
-                      value={filters.solo === undefined ? "all" : filters.solo.toString()}
-                      onValueChange={(value: string) => setFilters({
+            <Select
+              value={filters.specializations || 'all'}
+              onValueChange={(value: string) =>
+                setFilters({
+                  ...filters,
+                  specializations: value === 'all' ? undefined : value,
+                })
+              }
+            >
+              <SelectTrigger className="h-9 w-auto gap-2 px-3.5 text-xs font-semibold">
+                <SelectValue placeholder="Track" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Track: All tracks</SelectItem>
+                {Object.entries(specializationLabels).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={`${sortBy}:${sortOrder}`}
+              onValueChange={(value: string) => {
+                const [column, order] = value.split(':');
+                setSortBy(column);
+                setSortOrder(order as 'asc' | 'desc');
+              }}
+            >
+              <SelectTrigger className="h-9 w-auto gap-2 px-3.5 text-xs font-semibold">
+                <Filter className="h-3.5 w-3.5" />
+                <SelectValue placeholder="Sort" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name:asc">Name A → Z</SelectItem>
+                <SelectItem value="name:desc">Name Z → A</SelectItem>
+                <SelectItem value="xp_points:desc">XP high → low</SelectItem>
+                <SelectItem value="xp_points:asc">XP low → high</SelectItem>
+                <SelectItem value="estimate_time:asc">Time low → high</SelectItem>
+                <SelectItem value="estimate_time:desc">Time high → low</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <button
+              onClick={() => {
+                setFilters(defaultFilters);
+                setSearch('');
+              }}
+              className="ml-auto inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-[color:var(--brand-magenta-deep)]"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              Clear filters
+            </button>
+          </div>
+
+          {activeFilterCount > 0 && (
+            <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-4">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                Applied
+              </span>
+              {filters.solo !== undefined && (
+                <Badge variant="outline" className="gap-1.5">
+                  {filters.solo ? 'Solo' : 'Group'}
+                  <button
+                    aria-label="Remove mode filter"
+                    onClick={() => setFilters({ ...filters, solo: undefined })}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              )}
+              {filters.languages.map((language) => (
+                <Badge key={language} variant="outline" className="gap-1.5">
+                  {languageLabels[language] || language}
+                  <button
+                    aria-label={`Remove ${language} filter`}
+                    onClick={() =>
+                      setFilters({
                         ...filters,
-                        solo: value === "all" ? undefined : value === "true"
-                      })}
-                    >
-                      <SelectTrigger className="w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All</SelectItem>
-                        <SelectItem value="true">Solo</SelectItem>
-                        <SelectItem value="false">Group</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-[color:var(--color-42-primary)] mb-2">Languages</label>
-                    <Select
-                      value={filters.languages.length === 0 ? "all" : filters.languages[0]}
-                      onValueChange={(value: string) => setFilters({
-                        ...filters,
-                        languages: value === "all" ? [] : [value]
-                      })}
-                    >
-                      <SelectTrigger className="w-48">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Languages</SelectItem>
-                        <SelectItem value="c">C</SelectItem>
-                        <SelectItem value="cpp">C++</SelectItem>
-                        <SelectItem value="python">Python</SelectItem>
-                        <SelectItem value="ocaml">OCaml</SelectItem>
-                        <SelectItem value="java">Java</SelectItem>
-                        <SelectItem value="compiled_languages">Compiled Languages</SelectItem>
-                        <SelectItem value="functional_languages">Functional Languages</SelectItem>
-                        <SelectItem value="shell">Shell</SelectItem>
-                        <SelectItem value="php">PHP</SelectItem>
-                        <SelectItem value="csharp">C#</SelectItem>
-                        <SelectItem value="kotlin">Kotlin</SelectItem>
-                        <SelectItem value="swift">Swift</SelectItem>
-                        <SelectItem value="dart">Dart/Flutter</SelectItem>
-                        <SelectItem value="javascript">JavaScript</SelectItem>
-                        <SelectItem value="ruby">Ruby</SelectItem>
-                        <SelectItem value="zig">Zig</SelectItem>
-                        <SelectItem value="go">Go</SelectItem>
-                        <SelectItem value="assembly">Assembly</SelectItem>
-                        <SelectItem value="rust">Rust</SelectItem>
-                        <SelectItem value="undefined">Undefined</SelectItem>
-                        <SelectItem value="na">Not Applicable</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-[color:var(--color-42-primary)] mb-2">Specialization</label>
-                    <Select
-                      value={filters.specializations || "all"}
-                      onValueChange={(value: string) => setFilters({
-                        ...filters,
-                        specializations: value === "all" ? undefined : value
-                      })}
-                    >
-                      <SelectTrigger className="w-48">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Specializations</SelectItem>
-                        <SelectItem value="common_core">Common Core</SelectItem>
-                        <SelectItem value="algo_ai_data">Algo & AI & Data</SelectItem>
-                        <SelectItem value="security">Security</SelectItem>
-                        <SelectItem value="devops">Devops</SelectItem>
-                        <SelectItem value="web_mobile">Web & Mobile</SelectItem>
-                        <SelectItem value="system_kernel">System & Kernel</SelectItem>
-                        <SelectItem value="graphics_gaming">Graphics & Gaming</SelectItem>
-                        <SelectItem value="crypto_maths">Cryptography & Maths</SelectItem>
-                        <SelectItem value="development">Development</SelectItem>
-                        <SelectItem value="professional_exp">Professional Experience</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                        languages: filters.languages.filter((item) => item !== language),
+                      })
+                    }
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+              {filters.specializations && (
+                <Badge variant="outline" className="gap-1.5">
+                  {specializationLabels[filters.specializations] ||
+                    filters.specializations}
+                  <button
+                    aria-label="Remove track filter"
+                    onClick={() => setFilters({ ...filters, specializations: undefined })}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
               )}
             </div>
-          </CardContent>
-        </Card>
+          )}
+        </section>
 
-        {/* Projects Dashboard */}
-        <Card className="!z-0">
+        {/* Results */}
+        <div className="mt-6 flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            {loading
+              ? 'Loading projects…'
+              : `Showing ${sortedProjects.length} ${
+                  sortedProjects.length === 1 ? 'project' : 'projects'
+                }`}
+          </p>
+          <p className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
+            <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--brand-cyan)]" />
+            Sorted by {sortLabel.toLowerCase()}
+          </p>
+        </div>
 
-          <CardContent className="relative z-0">
+        <section className="mt-3 overflow-hidden rounded-2xl border border-border bg-card">
+          {error ? (
+            <div className="flex flex-col items-center gap-3 px-6 py-20 text-center">
+              <p className="text-lg font-semibold">Could not load projects</p>
+              <p className="text-sm text-muted-foreground">{error}</p>
+              <Button variant="outline" size="sm" onClick={fetchProjects}>
+                Try again
+              </Button>
+            </div>
+          ) : loading ? (
+            <div className="divide-y divide-border">
+              {Array.from({ length: 8 }).map((_, index) => (
+                <div key={index} className="flex items-center gap-6 px-6 py-5">
+                  <div className="h-3 w-40 animate-pulse rounded-full bg-surface-low" />
+                  <div className="hidden h-3 flex-1 animate-pulse rounded-full bg-surface-low md:block" />
+                  <div className="h-3 w-16 animate-pulse rounded-full bg-surface-low" />
+                </div>
+              ))}
+            </div>
+          ) : sortedProjects.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 px-6 py-20 text-center">
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-low">
+                <Search className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <p className="mt-2 text-lg font-semibold">No projects found</p>
+              <p className="text-sm text-muted-foreground">
+                Try a different search term or clear a few filters.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3"
+                onClick={() => {
+                  setSearch('');
+                  setFilters(defaultFilters);
+                }}
+              >
+                Reset everything
+              </Button>
+            </div>
+          ) : (
             <div className="overflow-x-auto">
-              <Table>
+              <Table className="min-w-[980px]">
                 <TableHeader>
-                  <TableRow className="hover:bg-[color:var(--color-42-surface-variant)]/50 bg-[color:var(--color-42-surface)]">
-                    <TableHead
-                      className="cursor-pointer hover:text-[color:var(--color-42-secondary)]"
-                      onClick={() => handleSort('name')}
-                    >
-                      <div className="flex items-center gap-1">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-[210px]">
+                      <button
+                        onClick={() => handleSort('name')}
+                        className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
+                      >
                         Project
-                        {sortBy === 'name' && (
-                          sortOrder === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                        )}
-                      </div>
+                        <SortIcon column="name" />
+                      </button>
                     </TableHead>
                     <TableHead>Description</TableHead>
-                    <TableHead
-                      className="cursor-pointer hover:text-[color:var(--color-42-secondary)]"
-                      onClick={() => handleSort('xp_points')}
-                    >
-                      <div className="flex items-center gap-1">
+                    <TableHead className="w-[110px]">
+                      <button
+                        onClick={() => handleSort('xp_points')}
+                        className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
+                      >
                         XP
-                        {sortBy === 'xp_points' && (
-                          sortOrder === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                        )}
-                      </div>
+                        <SortIcon column="xp_points" />
+                      </button>
                     </TableHead>
-                    <TableHead
-                      className="cursor-pointer hover:text-[color:var(--color-42-secondary)]"
-                      onClick={() => handleSort('estimate_time')}
-                    >
-                      <div className="flex items-center gap-1">
+                    <TableHead className="w-[90px]">
+                      <button
+                        onClick={() => handleSort('estimate_time')}
+                        className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
+                      >
                         Time
-                        {sortBy === 'estimate_time' && (
-                          sortOrder === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                        )}
-                      </div>
+                        <SortIcon column="estimate_time" />
+                      </button>
                     </TableHead>
-                    <TableHead
-                      className="cursor-pointer hover:text-[color:var(--color-42-secondary)]"
-                      onClick={() => handleSort('solo')}
-                    >
-                      <div className="flex items-center gap-1">
-                        Solo / Group
-                        {sortBy === 'solo' && (
-                          sortOrder === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                        )}
-                      </div>
-                    </TableHead>
-                    <TableHead>Languages</TableHead>
-                    <TableHead>Specializations</TableHead>
-                    {/* <TableHead>Subject</TableHead>*/}
+                    <TableHead className="w-[100px]">Mode</TableHead>
+                    <TableHead className="w-[150px]">Languages</TableHead>
+                    <TableHead className="w-[160px]">Track</TableHead>
+                    <TableHead className="w-[52px]" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sortedProjects.map((project) => (
-                    <React.Fragment key={project.id}>
-                      <TableRow>
-                        <TableCell className="font-medium text-foreground">
-                          {project.name}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          <div
-                            className="cursor-pointer transition-all duration-200 hover:text-[color:var(--color-42-primary)]"
-                            onClick={() => toggleRowExpansion(project.id)}
-                            title={project.description}
-                          >
-                            {project.description && project.description.length > 60
-                              ? `${project.description.substring(0, 60)}...`
-                              : project.description || "No description"}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-[color:var(--color-42-primary)] font-semibold">
-                          {project.xp_points || 0}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {project.estimate_time ? `${project.estimate_time}h` : "N/A"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="42-type">
-                            {project.solo ? "Solo" : "Group"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {project.languages && project.languages.length > 0 ? (
-                              project.languages.map((lang, index) => (
-                                <Badge key={index} variant="42-language">
-                                  {lang.display_name}
-                                </Badge>
-                              ))
-                            ) : (
-                              <span className="text-[color:var(--color-muted-foreground)] text-sm">N/A</span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
-                          <div className="flex flex-wrap gap-1">
-                            {project.specializations && project.specializations.length > 0 ? (
-                              project.specializations.map((spec, index) => (
-                                <Badge key={index} variant="42-language">
-                                  {spec.display_name}
-                                </Badge>
-                              ))
-                            ) : (
-                              <span className="text-[color:var(--color-muted-foreground)]">N/A</span>
-                            )}
-                          </div>
-                        </TableCell>
-                        {/*<TableCell>
-                          {project.subject_download_url ? (
-                            <Button
-                              variant="42-outline"
-                              size="sm"
-                              onClick={() => window.open(project.subject_download_url!, '_blank')}
+                  {visibleProjects.map((project) => {
+                    const expanded = expandedRows.has(project.id);
+                    const track = project.specializations?.[0];
+
+                    return (
+                      <React.Fragment key={project.id}>
+                        <TableRow
+                          className={expanded ? 'bg-surface-low/50' : undefined}
+                          data-state={expanded ? 'selected' : undefined}
+                        >
+                          <TableCell>
+                            <button
+                              onClick={() => toggleRowExpansion(project.id)}
+                              className="text-left"
                             >
-                              <Download className="h-4 w-4 mr-2" />
-                              PDF
-                            </Button>
-                          ) : (
-                            <span className="text-[color:var(--color-muted-foreground)] text-sm">N/A</span>
-                          )}
-                        </TableCell>*/}
-                      </TableRow>
-                      {expandedRows.has(project.id) && (
-                        <TableRow>
-                          <TableCell colSpan={8} className="bg-[color:var(--color-42-surface-variant)]/50 border-l-4 border-[color:var(--color-42-primary)]">
-                            <div className="p-4 rounded-lg bg-gruvbox-surface-variant">
-                              <p className="text-foreground leading-relaxed mb-3">
-                                {project.description || "No description available"}
-                              </p>
-                              {project.objectives && project.objectives.length > 0 && (
-                                <div>
-                                  <h4 className="text-[color:var(--color-42-primary)] font-medium mb-2">Objectives:</h4>
-                                  <ul className="list-disc list-inside text-muted-foreground space-y-1">
-                                    {project.objectives.map((objective, index) => (
-                                      <li key={index}>{objective}</li>
-                                    ))}
-                                  </ul>
-                                </div>
+                              <div className="font-semibold tracking-[-0.01em] text-foreground transition-colors hover:text-[color:var(--brand-magenta-deep)]">
+                                {project.name}
+                              </div>
+                              <div className="mt-0.5 text-[11px] tracking-[0.02em] text-muted-foreground">
+                                {project.slug}
+                              </div>
+                            </button>
+                          </TableCell>
+                          <TableCell className="max-w-[380px]">
+                            <button
+                              onClick={() => toggleRowExpansion(project.id)}
+                              className="line-clamp-2 text-left text-[13px] leading-5 text-muted-foreground transition-colors hover:text-foreground"
+                              title={project.description}
+                            >
+                              {project.description || 'No description'}
+                            </button>
+                          </TableCell>
+                          <TableCell className="font-semibold text-[color:var(--brand-magenta)]">
+                            {formatNumber(project.xp_points)}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {project.estimate_time ? `${project.estimate_time}h` : 'N/A'}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={project.solo ? 'cyan' : 'neutral'}>
+                              {project.solo ? 'Solo' : 'Group'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1">
+                              {project.languages && project.languages.length > 0 ? (
+                                project.languages.slice(0, 2).map((lang) => (
+                                  <Badge key={lang.name} variant="language">
+                                    {lang.display_name}
+                                  </Badge>
+                                ))
+                              ) : (
+                                <span className="text-xs text-muted-foreground">N/A</span>
                               )}
-                              {project.prerequisites && project.prerequisites.length > 0 && (
-                                <div className="mt-3">
-                                  <h4 className="text-[color:var(--color-42-primary)] font-medium mb-2">Prerequisites:</h4>
-                                  <div className="flex flex-wrap gap-2">
-                                    {project.prerequisites.map((prereq, index) => (
-                                      <Badge key={index} variant="42-language">
-                                        {prereq}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                </div>
+                              {project.languages && project.languages.length > 2 && (
+                                <Badge variant="language">
+                                  +{project.languages.length - 2}
+                                </Badge>
                               )}
                             </div>
                           </TableCell>
+                          <TableCell>
+                            {track ? (
+                              <span
+                                className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${trackClass(
+                                  track.name
+                                )}`}
+                              >
+                                {track.display_name}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">N/A</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <button
+                              onClick={() => toggleRowExpansion(project.id)}
+                              aria-expanded={expanded}
+                              aria-label={`${expanded ? 'Collapse' : 'Expand'} ${
+                                project.name
+                              }`}
+                              className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface-low hover:text-foreground"
+                            >
+                              <ChevronDown
+                                className={`h-4 w-4 transition-transform ${
+                                  expanded ? 'rotate-180' : ''
+                                }`}
+                              />
+                            </button>
+                          </TableCell>
                         </TableRow>
-                      )}
-                    </React.Fragment>
-                  ))}
+
+                        {expanded && (
+                          <TableRow className="hover:bg-transparent">
+                            <TableCell colSpan={8} className="p-0">
+                              <div className="border-l-2 border-[color:var(--brand-magenta)] bg-surface-low/60 px-6 py-6">
+                                <div className="mb-5 flex items-start justify-between gap-4">
+                                  <div>
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                                      Project brief
+                                    </p>
+                                    <h3 className="mt-1 text-lg font-semibold tracking-[-0.01em]">
+                                      {project.name}
+                                    </h3>
+                                  </div>
+                                  <button
+                                    onClick={() => toggleRowExpansion(project.id)}
+                                    className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
+                                  >
+                                    Collapse
+                                    <ChevronUp className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+
+                                <div className="grid gap-8 lg:grid-cols-12">
+                                <div className="lg:col-span-7">
+                                  <p className="text-[15px] leading-7 text-foreground/80">
+                                    {project.description || 'No description available'}
+                                  </p>
+
+                                  {project.objectives && project.objectives.length > 0 && (
+                                    <div className="mt-5">
+                                      <h4 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                                        Objectives
+                                      </h4>
+                                      <ul className="mt-2 grid gap-1.5 sm:grid-cols-2">
+                                        {project.objectives.map((objective, index) => (
+                                          <li
+                                            key={index}
+                                            className="flex gap-2 text-[13px] leading-5 text-foreground/80"
+                                          >
+                                            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--brand-magenta)]" />
+                                            {objective}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="space-y-5 lg:col-span-5">
+                                  {project.prerequisites &&
+                                    project.prerequisites.length > 0 && (
+                                      <div>
+                                        <h4 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                                          Prerequisites
+                                        </h4>
+                                        <div className="mt-2 flex flex-wrap gap-1.5">
+                                          {project.prerequisites.map((prereq, index) => (
+                                            <Badge key={index} variant="outline">
+                                              {prereq}
+                                            </Badge>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                  {project.specializations &&
+                                    project.specializations.length > 0 && (
+                                      <div>
+                                        <h4 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                                          Tracks
+                                        </h4>
+                                        <div className="mt-2 flex flex-wrap gap-1.5">
+                                          {project.specializations.map((spec) => (
+                                            <span
+                                              key={spec.name}
+                                              className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${trackClass(
+                                                spec.name
+                                              )}`}
+                                            >
+                                              {spec.display_name}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                  {project.subject_download_url && (
+                                    <div className="pt-1">
+                                      <a
+                                        href={project.subject_download_url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex items-center gap-1.5 text-sm font-semibold text-[color:var(--brand-magenta-deep)] transition-colors hover:text-[color:var(--brand-magenta)]"
+                                      >
+                                        Open subject
+                                        <ArrowUpRight className="h-4 w-4" />
+                                      </a>
+                                    </div>
+                                  )}
+                                </div>
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
-          </CardContent>
-        </Card>
+          )}
 
-        {sortedProjects.length === 0 && !loading && (
-          <div className="text-center py-12">
-            <div className="text-muted-foreground text-lg font-medium mb-2">No projects found</div>
-            <div className="text-[color:var(--color-muted-foreground)]">Try adjusting your search or filter criteria</div>
-          </div>
-        )}
+          {!loading && !error && sortedProjects.length > 0 && (
+            <div className="flex flex-col gap-3 border-t border-border px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-muted-foreground">
+                Showing {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, sortedProjects.length)} of{' '}
+                {sortedProjects.length} projects
+              </p>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  aria-label="Previous page"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:bg-surface-low disabled:pointer-events-none disabled:opacity-40"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                {Array.from({ length: totalPages }).map((_, index) => {
+                  const pageNumber = index + 1;
+                  return (
+                    <button
+                      key={pageNumber}
+                      onClick={() => setPage(pageNumber)}
+                      className={`flex h-8 min-w-8 items-center justify-center rounded-full px-2 text-xs font-semibold transition-colors ${
+                        pageNumber === currentPage
+                          ? 'bg-[color:var(--brand-magenta)] text-white'
+                          : 'text-muted-foreground hover:bg-surface-low'
+                      }`}
+                    >
+                      {pageNumber}
+                    </button>
+                  );
+                })}
+                <button
+                  onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  aria-label="Next page"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:bg-surface-low disabled:pointer-events-none disabled:opacity-40"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
       </main>
+
+      <SiteFooter compact />
     </div>
   );
 };

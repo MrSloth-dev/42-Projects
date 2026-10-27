@@ -1,24 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Loader2, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { Logo } from './Logo';
+import { Button } from '@/components/ui/button';
+
+type Status = 'loading' | 'success' | 'error';
 
 const OAuthCallback: React.FC = () => {
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [status, setStatus] = useState<Status>('loading');
   const [error, setError] = useState<string>('');
   const navigate = useNavigate();
 
-  let callbackhasRun = false;
   useEffect(() => {
+    let hasRun = false;
 
     const handleCallback = async () => {
-      if (callbackhasRun) return;
-      callbackhasRun = true;
+      if (hasRun) return;
+      hasRun = true;
+
       const urlParams = new URLSearchParams(window.location.search);
       const success = urlParams.get('success');
-      const error = urlParams.get('error');
+      const errorParam = urlParams.get('error');
 
-      if (error) {
+      if (errorParam) {
         setStatus('error');
-        setError(`OAuth error: ${error}`);
+        setError(`OAuth error: ${errorParam}`);
         return;
       }
 
@@ -30,7 +36,6 @@ const OAuthCallback: React.FC = () => {
         return;
       }
 
-      // If no success or error parameter, something went wrong
       setStatus('error');
       setError('Invalid callback parameters');
     };
@@ -38,36 +43,59 @@ const OAuthCallback: React.FC = () => {
     handleCallback();
   }, [navigate]);
 
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen bg-gruvbox-gradient flex items-center justify-center">
-        <div className="text-[color:var(--color-42-secondary)] text-lg font-medium">Authenticating with 42...</div>
-      </div>
+  const icon =
+    status === 'success' ? (
+      <ShieldCheck className="h-6 w-6 text-[color:var(--brand-cyan-dark)]" />
+    ) : status === 'error' ? (
+      <ShieldAlert className="h-6 w-6 text-destructive" />
+    ) : (
+      <Loader2 className="h-6 w-6 animate-spin text-[color:var(--brand-magenta)]" />
     );
-  }
-
-  if (status === 'error') {
-    return (
-      <div className="min-h-screen bg-gruvbox-gradient flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-[color:var(--color-destructive)] text-lg font-medium mb-4">Authentication Error</div>
-          <div className="text-[color:var(--color-muted-foreground)] mb-4">{error}</div>
-          <button
-            onClick={() => navigate('/')}
-            className="bg-[color:var(--color-42-primary)] hover:bg-[color:var(--gb-neutral-orange)] text-[color:var(--gb-dark0)] font-semibold py-2 px-4 rounded"
-          >
-            Go Back
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-gruvbox-gradient flex items-center justify-center">
-      <div className="text-center">
-        <div className="text-[color:var(--color-42-highlight)] text-lg font-medium mb-4">Authentication Successful!</div>
-        <div className="text-[color:var(--color-muted-foreground)]">Redirecting to dashboard...</div>
+    <div className="grid-canvas flex min-h-screen items-center justify-center bg-background px-6">
+      <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 text-center">
+        <div className="flex justify-center">
+          <Logo />
+        </div>
+
+        <div className="mx-auto mt-8 flex h-12 w-12 items-center justify-center rounded-full bg-surface-low">
+          {icon}
+        </div>
+
+        {status === 'loading' && (
+          <>
+            <h1 className="mt-5 text-xl font-semibold tracking-[-0.01em]">
+              Authenticating with 42…
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Verifying your session. This only takes a moment.
+            </p>
+          </>
+        )}
+
+        {status === 'success' && (
+          <>
+            <h1 className="mt-5 text-xl font-semibold tracking-[-0.01em]">
+              Authentication successful
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Taking you to the project explorer…
+            </p>
+          </>
+        )}
+
+        {status === 'error' && (
+          <>
+            <h1 className="mt-5 text-xl font-semibold tracking-[-0.01em]">
+              Authentication failed
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">{error}</p>
+            <Button className="mt-6 w-full" onClick={() => navigate('/')}>
+              Back to home
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );

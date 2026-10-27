@@ -6,3 +6,5 @@ package-lock.json
 cloudflare_origin_cert.pem
 cloudflare_tunnel_credentials.json
 cloudflared-config.yml
+
+.stitch/
