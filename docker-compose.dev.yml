@@ -1,0 +1,11 @@
+# Development-only overrides.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d backend
+#
+# Publishes Django on the host so a frontend dev server (bun run dev on :3000)
+# can proxy /api to http://localhost:8000. The SQLite file is still the one on
+# the sqlite_data volume, so dev and Compose see the same data.
+services:
+  backend:
+    ports:
+      - "8000:8000"

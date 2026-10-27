@@ -8,9 +8,7 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm",
-      // 42 Projects Gruvbox styling
-      "bg-[color:var(--color-card)] backdrop-blur-sm border-[color:var(--color-border)] shadow-xl shadow-[color:var(--color-42-surface)]/20",
+      "rounded-2xl border border-border bg-card text-card-foreground",
       className
     )}
     {...props}

@@ -6,8 +6,8 @@ services:
         context: ./nginx
         dockerfile: Dockerfile
       ports:
-        - "80:80"
-        - "443:443"
+        - "${HTTP_PORT:-8080}:80"
+        - "${HTTPS_PORT:-8443}:443"
       volumes:
         - static_volume:/app/staticfiles:ro
         - media_volume:/app/media:ro
@@ -16,24 +16,6 @@ services:
         - frontend
       restart: unless-stopped
       networks:
-        - app-network
-  db:
-    container_name: db
-    image: postgres:15
-    environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./backups:/backups
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-    networks:
         - app-network
 
   backend:
@@ -44,14 +26,15 @@ services:
       - "8000"
     env_file:
       - .env
-    depends_on:
-      db:
-        condition: service_healthy
+    environment:
+      # SQLite file lives on a volume owned by the backend service. There is no
+      # database container: one service, one file, one backup to copy.
+      DB_DIR: /app/data
     restart: unless-stopped
     volumes:
+      - sqlite_data:/app/data
       - static_volume:/app/staticfiles
       - media_volume:/app/media
-      - ./backups:/app/backups
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/projects/', timeout=10)"]
       interval: 30s
@@ -87,7 +70,7 @@ services:
       - production  # Only run when 'production' profile is active
 
 volumes:
-  postgres_data:
+  sqlite_data:
   static_volume:
   media_volume:
 

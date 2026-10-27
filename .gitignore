@@ -1,8 +1,15 @@
 .env
 .venv/
+data/
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+backups/
 *.pyc
 __pycache__/
 package-lock.json
 cloudflare_origin_cert.pem
 cloudflare_tunnel_credentials.json
 cloudflared-config.yml
+
+.stitch/
